@@ -3,3 +3,4 @@ node_modules/
 
 # Ignore files added for Foundry IntelliSense
 foundry.js
+module.zip
