@@ -1,6 +1,6 @@
 # Grid-Aware Auras — Personal Fork
 
-This is a personal fork of [Grid-Aware Auras](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras) by **Will Bennion (Wibble199)**, maintained for private use with additional features
+This is a personal fork of [Grid-Aware Auras](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras) by **(Wibble199)**, maintained for private use with additional features
 
 ---
 
