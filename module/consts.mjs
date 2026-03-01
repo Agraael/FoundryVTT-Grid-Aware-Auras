@@ -10,14 +10,14 @@ export const DOCUMENT_AURAS_FLAG = "auras";
 // Settings
 export const ENABLE_EFFECT_AUTOMATION_SETTING = "enableEffectAutomation";
 export const ENABLE_MACRO_AUTOMATION_SETTING = "enableMacroAutomation";
+export const PRESET_SETTING = "presets";
 export const SQUARE_GRID_MODE_SETTING = "squareGridMode";
 export const CUSTOM_AURA_TARGET_FILTERS_SETTING = "customAuraTargetFilters";
-export const PRESET_SETTING = "presets";
 
 // Hooks
 const HOOK_PREFIX = "gridAwareAuras";
-export const END_MOVE_INSIDE_AURA_HOOK = `${HOOK_PREFIX}.endMoveInsideAura`;
 export const ENTER_LEAVE_AURA_HOOK = `${HOOK_PREFIX}.enterLeaveAura`;
+export const END_MOVE_INSIDE_AURA_HOOK = `${HOOK_PREFIX}.endMoveInsideAura`;
 export const START_MOVE_INSIDE_AURA_HOOK = `${HOOK_PREFIX}.startMoveInsideAura`;
 
 // Socket functions
@@ -125,13 +125,6 @@ export const SEQUENCE_EASINGS = /** @type {const} */ ({
 	easeInOutCubic: "GRIDAWAREAURAS.SequenceEasingEaseInOut"
 });
 
-/** @enum {keyof typeof THT_RULER_ON_DRAG_MODES} */
-export const THT_RULER_ON_DRAG_MODES = /** @type {const} */ ({
-	NONE: "GRIDAWAREAURAS.ThtRulerOnDragModeNone",
-	C2C: "GRIDAWAREAURAS.ThtRulerOnDragModeC2C",
-	E2E: "GRIDAWAREAURAS.ThtRulerOnDragModeE2E"
-});
-
 /** @enum {keyof typeof AURA_POSITIONS} */
 export const AURA_POSITIONS = /** @type {const} */ ({
 	CENTER: "GRIDAWAREAURAS.AuraPositionCenter",
@@ -139,4 +132,11 @@ export const AURA_POSITIONS = /** @type {const} */ ({
 	TOP_RIGHT: "GRIDAWAREAURAS.AuraPositionTopRight",
 	BOTTOM_RIGHT: "GRIDAWAREAURAS.AuraPositionBottomRight",
 	BOTTOM_LEFT: "GRIDAWAREAURAS.AuraPositionBottomLeft"
+});
+
+/** @enum {keyof typeof THT_RULER_ON_DRAG_MODES} */
+export const THT_RULER_ON_DRAG_MODES = /** @type {const} */ ({
+	NONE: "GRIDAWAREAURAS.ThtRulerOnDragModeNone",
+	C2C: "GRIDAWAREAURAS.ThtRulerOnDragModeC2C",
+	E2E: "GRIDAWAREAURAS.ThtRulerOnDragModeE2E"
 });

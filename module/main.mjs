@@ -3,12 +3,12 @@ import { addAuraConfigItemHeaderButton } from "./applications/item-aura-config.m
 import { tokenConfigClose, v12TokenConfigRenderInner, v13TokenConfigRender } from "./applications/token-aura-config.mjs";
 import { setupAutomation } from "./automation/index.mjs";
 import { DOCUMENT_AURAS_FLAG, END_MOVE_INSIDE_AURA_HOOK, MODULE_NAME, SOCKET_NAME, START_MOVE_INSIDE_AURA_HOOK, TOGGLE_EFFECT_FUNC } from "./consts.mjs";
-import { initialiseAuraTargetFilters } from "./data/aura-target-filters.mjs";
+import { canTargetToken, initialiseAuraTargetFilters } from "./data/aura-target-filters.mjs";
 import { getPresets } from "./data/preset.mjs";
 import { AuraLayer } from "./layers/aura-layer/aura-layer.mjs";
 import { registerSettings } from "./settings.mjs";
 import { setupSystemIntegration } from "./system-integrations/index.mjs";
-import { pickProperties, toggleEffect } from "./utils/misc-utils.mjs";
+import { isTerrainHeightToolsActive, pickProperties, toggleEffect } from "./utils/misc-utils.mjs";
 
 // Token properties (flattened) to trigger an aura check on
 const watchedTokenProperties = [
@@ -19,6 +19,157 @@ const watchedTokenProperties = [
 	"hexagonalShape",
 	"flags.grid-aware-auras.auras"
 ];
+
+// Track active ruler groups for Alt-pressed rulers (so we can clean them even if preview token is gone)
+const activeAltPressedRulers = new Set();
+
+// Track last known state of keys to detect changes
+const lastKeyState = new Map();
+
+// Key press detection
+document.addEventListener("keydown", (event) => {
+	const wasPressed = lastKeyState.get(event.code);
+	lastKeyState.set(event.code, true);
+
+	// Only update if state actually changed
+	if (!wasPressed) {
+		// Update THT rulers when key is pressed
+		updateTerrainHeightToolsForControlledToken();
+	}
+});
+
+document.addEventListener("keyup", (event) => {
+	const wasPressed = lastKeyState.get(event.code);
+	lastKeyState.set(event.code, false);
+
+	// Only update if state actually changed
+	if (wasPressed) {
+		updateTerrainHeightToolsForControlledToken();
+	}
+});
+
+// Export function to check if a key is pressed
+// Uses Foundry's keyboard system which handles focus loss correctly
+export function isKeyPressed(keyCode) {
+	// Check Foundry's keyboard state which is more reliable
+	const isActuallyPressed = game.keyboard?.downKeys?.has(keyCode) ?? false;
+
+	// Update our tracking if it's out of sync
+	const wasTrackedAsPressed = lastKeyState.get(keyCode);
+	if (isActuallyPressed !== wasTrackedAsPressed) {
+		lastKeyState.set(keyCode, isActuallyPressed);
+	}
+
+	return isActuallyPressed;
+}
+
+// Update Terrain Height Tools rulers for controlled token
+function updateTerrainHeightToolsForControlledToken() {
+	// game may not be ready if keys are pressed before Foundry initializes
+	if (!game.modules) return;
+	// Check if Terrain Height Tools is active
+	if (!isTerrainHeightToolsActive()) return;
+	if (!AuraLayer.current || !canvas.tokens) return;
+
+	// Clear all previously stored ruler groups first
+	for (const group of activeAltPressedRulers) {
+		terrainHeightTools.clearLineOfSightRays({ group });
+	}
+	activeAltPressedRulers.clear();
+
+	const controlled = canvas.tokens.controlled;
+
+	// If no token or multiple tokens are controlled, we're done (already cleaned up)
+	if (controlled.length !== 1) return;
+	const token = controlled[0];
+
+	// Find the preview token if it exists (during drag)
+	// The preview token is in canvas.tokens.preview.children
+	let activeToken = token;
+	if (canvas.tokens.preview?.children?.length > 0) {
+		for (const previewToken of canvas.tokens.preview.children) {
+			if (previewToken.document?.id === token.document.id) {
+				activeToken = previewToken;
+				break;
+			}
+		}
+	}
+
+	// Get the auras for the base token (auras are always on the base token)
+	const auras = AuraLayer.current._auraManager.getTokenAuras(token);
+
+	// Get user's targeted tokens (excluding the controlled token itself)
+	const userTargets = Array.from(game.user.targets).filter(t => t.document.id !== token.document.id);
+
+	// Determine which tokens to check: if there are targeted tokens, use only those; otherwise use all tokens
+	// const tokensToCheck = userTargets.length > 0 ? userTargets : canvas.tokens.placeables;
+
+	// Check each aura
+	for (const aura of auras) {
+		const config = aura.config;
+
+		// Determine tokens to check for this specific aura
+		let tokensToCheck;
+		if (userTargets.length > 0) {
+			tokensToCheck = userTargets;
+		} else {
+			// If no targets, check if we should restrict to targeted only
+			const onlyWhenTargeted = config.terrainHeightTools?.onlyWhenTargeted;
+			tokensToCheck = onlyWhenTargeted ? [] : canvas.tokens.placeables;
+		}
+
+		if (tokensToCheck.length === 0) continue;
+
+		// Check if this aura uses the Alt key for THT
+		if (config.terrainHeightTools?.onlyWhenAltPressed &&
+			config.terrainHeightTools.rulerOnDrag !== "NONE") {
+			// Check if aura should be active based on combat state
+			if (config.onlyEnabledInCombat) {
+				const isCombatActive = game.combat?.started ?? false;
+				if (!isCombatActive) {
+					continue;
+				}
+			}
+
+			const keyPressed = isKeyPressed(config.keyToPress ?? "AltLeft");
+
+			// If Alt is pressed and token is controlled, draw new rulers
+			if (keyPressed && token.controlled) {
+				// Check which tokens are inside the aura from the active token's position
+				// We need to check manually because the manager only knows about the base token position
+				for (const targetToken of tokensToCheck) {
+					if (targetToken.document.id === token.document.id) continue;
+
+					// Check if target token is inside the aura from activeToken's perspective
+					const isInside = aura.isInside(targetToken, {
+						sourceTokenPosition: (activeToken?.isPreview && activeToken.x != null && activeToken.y != null)
+							? { x: activeToken.x, y: activeToken.y }
+							: undefined,
+						useActualSourcePosition: activeToken?.isPreview
+					});
+
+					const group = [MODULE_NAME, token.document.uuid, config.id, targetToken.document.uuid].join("|");
+
+					if (isInside && canTargetToken(targetToken, token, config, config.terrainHeightTools.targetTokens)) {
+						// Draw the ruler from activeToken to targetToken
+						terrainHeightTools.drawLineOfSightRaysBetweenTokens(
+							activeToken,
+							targetToken,
+							{
+								group,
+								drawForOthers: false,
+								includeEdges: config.terrainHeightTools.rulerOnDrag === "E2E"
+							}
+						);
+						// Store the group so we can clean it later even if tokens are gone
+						activeAltPressedRulers.add(group);
+					}
+				}
+			}
+		}
+	}
+}
+
 
 Hooks.once("init", () => {
 	registerSettings();
@@ -151,9 +302,12 @@ Hooks.on("refreshToken", (token, { refreshPosition, refreshVisibility }) => {
 		if (token.isPreview) {
 			AuraLayer.current?._updateAuras({ token });
 			AuraLayer.current?._testCollisionsForToken(token, { useActualPosition: true });
+			// Clean and update THT rulers during drag
 		} else {
 			AuraLayer.current?._updateAuraGraphics({ token, updatePosition: !!refreshPosition });
 		}
+		// Update THT rulers when token position changes (drag, drop, etc.)
+		updateTerrainHeightToolsForControlledToken();
 	}
 });
 
@@ -165,6 +319,8 @@ Hooks.on("hoverToken", token => {
 // When token is controlled/uncontrolled, we need to check aura visibility
 Hooks.on("controlToken", token => {
 	AuraLayer.current?._updateAuraGraphics({ token });
+	// Update THT rulers when token is controlled/uncontrolled (to clean up when deselected)
+	updateTerrainHeightToolsForControlledToken();
 });
 
 // When token is targeted/untargeted, we need to check aura visibility
@@ -193,7 +349,7 @@ Hooks.on("updateItem", (item, _delta, _options, userId) => {
 	}
 });
 
-// When an item is created, update auras on any of that actor's tokens
+// When an item is deleted, update auras on any of that actor's tokens
 // Do this regardless of whether the item itself has auras, as some aura values may be calculated from the actor's items
 Hooks.on("deleteItem", (item, _options, userId) => {
 	if (item.actor) {

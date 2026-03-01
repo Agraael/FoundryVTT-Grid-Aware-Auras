@@ -1,9 +1,10 @@
 /** @import { AuraConfig } from "../../data/aura.mjs"; */
 import { ENTER_LEAVE_AURA_HOOK } from "../../consts.mjs";
-import { getTokenAuras } from "../../data/aura.mjs";
+import { areAurasVisuallyEqual, getTokenAuras } from "../../data/aura.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { AuraManager } from "./aura-manager.mjs";
 import { Aura } from "./aura.mjs";
+import { UnifiedAuraGroup } from "./unified-aura-group.mjs";
 
 /**
  * Layer for managing grid-aware auras on a canvas.
@@ -18,6 +19,10 @@ export class AuraLayer extends CanvasLayer {
 	/** If true, will not raise any leave hooks when tokens are destroyed. */
 	_isTearingDown = false;
 
+	#unifiedGroups = new Map();
+
+	#unifiedUpdatePending = false;
+
 	/** @returns {AuraLayer | undefined} */
 	static get current() {
 		return game.ready ? game.canvas?.gaaAuraLayer : undefined;
@@ -25,6 +30,9 @@ export class AuraLayer extends CanvasLayer {
 
 	/** @override */
 	async _draw() {
+		for (const group of this.#unifiedGroups.values()) group.destroy();
+		this.#unifiedGroups.clear();
+
 		// Reset state
 		this._auraManager.clear();
 		this._isTearingDown = false;
@@ -84,6 +92,8 @@ export class AuraLayer extends CanvasLayer {
 				if (updateVisibility) aura.updateVisibility();
 			}
 		}
+
+		this._scheduleUnifiedAuraUpdate();
 	}
 
 	/**
@@ -144,6 +154,8 @@ export class AuraLayer extends CanvasLayer {
 		} else {
 			this.#testCollisions({ userId, isInit });
 		}
+
+		this._scheduleUnifiedAuraUpdate();
 	}
 
 	/**
@@ -155,6 +167,54 @@ export class AuraLayer extends CanvasLayer {
 	_updateActorAuras(actor, { userId } = {}) {
 		for (const token of actor.getActiveTokens({ linked: true, document: true })) {
 			this._updateAuras({ token, userId });
+		}
+	}
+
+	_scheduleUnifiedAuraUpdate() {
+		if (this.#unifiedUpdatePending || !this.#isInitialised) return;
+		this.#unifiedUpdatePending = true;
+		canvas.app.ticker.addOnce(() => {
+			this.#unifiedUpdatePending = false;
+			this._updateUnifiedAuras().catch(console.error);
+		}, undefined, PIXI.UPDATE_PRIORITY.UTILITY);
+	}
+
+	async _updateUnifiedAuras() {
+		if (!this.#isInitialised) return;
+
+		/** @type {Map<string, import("./unified-aura-group.mjs").AuraEntry[]>} */
+		const groups = new Map();
+		for (const { parent, aura } of this._auraManager.getAllAuras({ preview: false })) {
+			if (!aura.config.unified || !aura.config.enabled) continue;
+			const name = aura.config.name;
+			if (!groups.has(name)) {
+				groups.set(name, [{ token: parent, aura }]);
+				continue;
+			}
+			const group = groups.get(name);
+			if (areAurasVisuallyEqual(aura.config, group[0].aura.config)) {
+				group.push({ token: parent, aura });
+			}
+		}
+
+		for (const [name, group] of this.#unifiedGroups) {
+			const entries = groups.get(name);
+			if (!entries || entries.length < 2) {
+				group.destroy();
+				this.#unifiedGroups.delete(name);
+			}
+		}
+
+		for (const [name, entries] of groups) {
+			if (entries.length < 2) continue;
+
+			let group = this.#unifiedGroups.get(name);
+			if (!group) {
+				group = new UnifiedAuraGroup(name);
+				this.#unifiedGroups.set(name, group);
+			}
+
+			await group.update(entries);
 		}
 	}
 
@@ -192,9 +252,28 @@ export class AuraLayer extends CanvasLayer {
 		).flatMap(t => this._auraManager.getTokenAuras(t).map(aura => ({ parent: t, aura })));
 
 		// Array of the tokens to test
-		const tokensToTest = targetToken
-			? [targetToken]
-			: [...game.canvas.tokens.placeables];
+		let tokensToTest;
+		if (targetToken) {
+			tokensToTest = [targetToken];
+		} else if (sourceToken && canvas.tokens.quadtree) {
+			// Optimization: If we have a source token, only check tokens that are physically near its auras
+			const sourceAuras = this._auraManager.getTokenAuras(sourceToken);
+			if (sourceAuras.length === 0) {
+				tokensToTest = [];
+			} else {
+				const nearbyTokens = new Set();
+				for (const aura of sourceAuras) {
+					// Use the graphics bounds to query the quadtree
+					const bounds = aura.graphics.getBounds();
+					const objects = canvas.tokens.quadtree.getObjects(bounds);
+					for (const t of objects) nearbyTokens.add(t);
+				}
+				tokensToTest = [...nearbyTokens];
+			}
+		} else {
+			// Fallback: Check all tokens
+			tokensToTest = [...game.canvas.tokens.placeables];
+		}
 
 		// Perform collision tests
 		for (const token of tokensToTest) {
@@ -207,7 +286,11 @@ export class AuraLayer extends CanvasLayer {
 				if (parent.id === token.id) // token cannot enter it's own aura
 					continue;
 
-				const isInAura = aura.config.enabled
+				// Check if aura should only be enabled in combat
+				const isCombatActive = game.combat?.started ?? false;
+				const isAuraEnabledInContext = !aura.config.onlyEnabledInCombat || isCombatActive;
+
+				const isInAura = aura.config.enabled && isAuraEnabledInContext
 					&& parent !== destroyToken && token !== destroyToken
 					&& aura.isInside(token, {
 						sourceTokenPosition: sourceTokenDelta,

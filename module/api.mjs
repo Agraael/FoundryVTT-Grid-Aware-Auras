@@ -9,7 +9,7 @@ import { toggleEffect as toggleEffectImpl } from "./utils/misc-utils.mjs";
  * Creates a new aura on the provided document.
  * @param {Token | TokenDocument | Item} owner The entity that will own the aura.
  * @param {Omit<Partial<AuraConfig>, "id" | "_v">} aura The aura to create.
- * @param {Promise<AuraConfig>}
+ * @returns {Promise<AuraConfig>}
  */
 export async function createAura(owner, aura = {}) {
 	owner = owner instanceof Token ? owner.document : owner;

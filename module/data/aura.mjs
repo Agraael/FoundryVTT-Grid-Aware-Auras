@@ -10,7 +10,16 @@ export const latestAuraConfigVersion = 1;
  * @property {string} id
  * @property {string} name
  * @property {boolean} enabled
- * @property {number | string} radius A numeric value or a expression representing the outer radius of the aura.
+ * @property {boolean} unified
+ * @property {boolean} onlyEnabledInCombat
+ * @property {boolean} animation
+ * @property {string} animationType
+ * @property {boolean} pulseToMax
+ * @property {number} animationSpeed
+ * @property {boolean} animationWhenSelected
+ * @property {string} keyPressMode Mode for key press visibility: "DISABLED", "ONLY_WHEN_PRESSED", "ALSO_WHEN_PRESSED"
+ * @property {string} keyToPress
+ * @property {number | string} radius A numeric value or an expression representing the outer radius of the aura.
  * @property {number | string} innerRadius A numeric value or expression representing the inner radius (hole) of the aura. If negative, there is no hole.
  * @property {AURA_POSITIONS} position
  * @property {LINE_TYPES} lineType
@@ -19,12 +28,18 @@ export const latestAuraConfigVersion = 1;
  * @property {number} lineOpacity
  * @property {number} lineDashSize
  * @property {number} lineGapSize
+ * @property {boolean} lineGlow
+ * @property {number} lineGlowStrength
+ * @property {number} radiusOffset
  * @property {number} fillType
  * @property {string} fillColor
  * @property {number} fillOpacity
  * @property {string} fillTexture
  * @property {{ x: number; y: number; }} fillTextureOffset
  * @property {{ x: number; y: number; }} fillTextureScale
+ * @property {boolean} fillAnimation
+ * @property {number} fillAnimationSpeed
+ * @property {number} fillAnimationAngle
  * @property {VisibilityConfig} ownerVisibility
  * @property {VisibilityConfig} nonOwnerVisibility
  * @property {EffectConfig[]} effects
@@ -33,6 +48,8 @@ export const latestAuraConfigVersion = 1;
  * @property {Object} terrainHeightTools
  * @property {THT_RULER_ON_DRAG_MODES} terrainHeightTools.rulerOnDrag
  * @property {string} terrainHeightTools.targetTokens ID of the filter to use to specify targetable tokens.
+ * @property {boolean} terrainHeightTools.onlyWhenAltPressed Only show when Alt key is pressed
+ * @property {boolean} terrainHeightTools.onlyWhenTargeted Only show when a token is targeted
  */
 /** @typedef {AuraConfig & { radiusCalculated: number; innerRadiusCalculated: number; }} AuraConfigWithRadius */
 /**
@@ -58,6 +75,7 @@ export const latestAuraConfigVersion = 1;
  * @property {string} targetTokens ID of the filter to use to specify targetable tokens.
  * @property {MACRO_MODES} mode
  */
+
 /**
  * @typedef {Object} SequencerEffectConfig
  * @property {string} uId Unique ID for this sequence, used in the sequencer name to uniquely identify it.
@@ -215,6 +233,15 @@ export const auraDefaults = () => ({
 	_v: latestAuraConfigVersion,
 	name: "New Aura",
 	enabled: true,
+	unified: false,
+	onlyEnabledInCombat: false,
+	animation: false,
+	animationType: "scroll",
+	pulseToMax: false,
+	animationSpeed: 1,
+	animationWhenSelected: false,
+	keyPressMode: "DISABLED",
+	keyToPress: "AltLeft",
 	radius: 1,
 	innerRadius: "",
 	position: "CENTER",
@@ -224,12 +251,18 @@ export const auraDefaults = () => ({
 	lineOpacity: 0.8,
 	lineDashSize: 15,
 	lineGapSize: 10,
+	lineGlow: false,
+	lineGlowStrength: 10,
+	radiusOffset: 0,
 	fillType: CONST.DRAWING_FILL_TYPES.SOLID,
 	fillColor: "#FF0000",
 	fillOpacity: 0.1,
 	fillTexture: "",
 	fillTextureOffset: { x: 0, y: 0 },
 	fillTextureScale: { x: 100, y: 100 },
+	fillAnimation: false,
+	fillAnimationSpeed: 0,
+	fillAnimationAngle: 0,
 	ownerVisibility: auraVisibilityDefaults,
 	nonOwnerVisibility: auraVisibilityDefaults,
 	effects: [],
@@ -237,7 +270,9 @@ export const auraDefaults = () => ({
 	sequencerEffects: [],
 	terrainHeightTools: {
 		rulerOnDrag: "NONE",
-		targetTokens: ""
+		targetTokens: "",
+		onlyWhenAltPressed: false,
+		onlyWhenTargeted: false
 	}
 });
 
@@ -308,6 +343,30 @@ const migrations = [
 		return config;
 	}
 ];
+
+/**
+ * @param {AuraConfig} a
+ * @param {AuraConfig} b
+ * @returns {boolean}
+ */
+export function areAurasVisuallyEqual(a, b) {
+	const props = [
+		"lineType", "lineWidth", "lineColor", "lineOpacity",
+		"lineDashSize", "lineGapSize", "lineGlow", "lineGlowStrength",
+		"radiusOffset",
+		"fillType", "fillColor", "fillOpacity", "fillTexture",
+		"fillAnimation", "fillAnimationSpeed", "fillAnimationAngle",
+		"animation", "animationType", "pulseToMax", "animationSpeed", "animationWhenSelected"
+	];
+	for (const p of props) {
+		if (a[p] !== b[p]) return false;
+	}
+	if (a.fillTextureOffset?.x !== b.fillTextureOffset?.x) return false;
+	if (a.fillTextureOffset?.y !== b.fillTextureOffset?.y) return false;
+	if (a.fillTextureScale?.x !== b.fillTextureScale?.x) return false;
+	if (a.fillTextureScale?.y !== b.fillTextureScale?.y) return false;
+	return true;
+}
 
 /** @returns {AuraConfig} */
 export function createAura() {

@@ -1,109 +1,57 @@
-# Grid-Aware Auras
+# Grid-Aware Auras — Personal Fork
 
-[![Latest module version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgithub.com%2FWibble199%2FFoundryVTT-Grid-Aware-Auras%2Freleases%2Flatest%2Fdownload%2Fmodule.json&query=%24.version&prefix=v&style=for-the-badge&label=module%20version)](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/latest)
-![Latest Foundry version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgithub.com%2FWibble199%2FFoundryVTT-Grid-Aware-Auras%2Freleases%2Flatest%2Fdownload%2Fmodule.json&query=%24.compatibility.verified&style=for-the-badge&label=foundry%20version&color=fe6a1f)
-<br/>
-[![GitHub downloads (total)](https://img.shields.io/github/downloads/Wibble199/FoundryVTT-Grid-Aware-Auras/release.zip?style=for-the-badge&label=downloads%20(total))](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/latest)
-[![GitHub downloads (latest version)](https://img.shields.io/github/downloads/Wibble199/FoundryVTT-Grid-Aware-Auras/latest/release.zip?style=for-the-badge&label=downloads%20(latest))](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/latest)
+This is a personal fork of [Grid-Aware Auras](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras) by **Will Bennion (Wibble199)**, maintained for private use with additional features
 
-A module which draws grid-accurate auras around tokens, which supports any size token and has customisable display styles.
-
-![Preview image](./docs/img/preview.png)
+---
 
 ## Installation
 
-Simply search for 'Grid-Aware Auras' in the Foundry 'Install Module' screen and install it from there.
+Since this module is not listed in the Foundry package registry, install it manually via the manifest URL:
 
-Alternatively, paste this URL into the 'Manifest URL' field of the 'Install Module' dialog in the Foundry configuration: `https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/latest/download/module.json`, then enable the module in your world.
+1. In Foundry VTT, go to **Add-on Modules → Install Module**
+2. Paste the following URL in the **Manifest URL** field:
 
-## Usage
+```
+https://github.com/Agraael/FoundryVTT-Grid-Aware-Auras/releases/latest/download/module.json
+```
 
-1. First open a token configuration by using the cog button when right-clicking a token on the scene, or open the prototype token configuration for an actor.
-2. Then, navigate to the new "Auras" tab, then click the `+` button to create a new aura. You can then set the [radius](#radius) of the aura, how you want it to appear visually, [when it should be visible](#visibility), and whether you want to add any [automation functionality](#automation). You can add as many auras as you want!
-3. If you need to edit an existing aura, you can click the cog button next to it to edit it. You can also quickly toggle whether that aura is visible by clicking the eye icon.
-4. Finally, just click the "Update Token" button.
+3. Click **Install**
 
-### Radius
+---
 
-The radius of the aura can either be a number or a roll expression.
+## Changes from upstream
 
-Roll expressions must be deterministic (i.e. not contain any dice expressions, for example). They are otherwise able to use any feature available to Foundry's rolls - including maths equations/functions.
-Roll expressions can also access values on the actor or the item (for item auras). This is done by using `@actor.<path>` or `@item.<path>`. For example, if you were using the Lancer game system, you could use `@actor.system.sensor_range` to have a radius equal to a mech's sensors. The exact path will depend heavily on the game system you are playing.
+### Features added
 
-On square and hexagonal grids, the final value will be rounded to the nearest whole number. On gridless scenes, this can be a decimal value.
-If the final value is less than 0, the aura will not be drawn.
+**Alt key / dynamic THT rulers**
+- Holding `Alt` dynamically shows Terrain Height Tools rulers for all controlled tokens' auras configured with key press visibility
+- New visibility modes: **"Only when key pressed"** and **"Also when key pressed"**, with configurable key (`Alt`, `Ctrl`, `Shift`)
 
-### Visibility
+**Aura animation**
+- Border animation: scroll (animated dashes) and pulse (opacity breathing)
+- Configurable animation speed; pulse can target max opacity or fade to a minimum
+- Option to animate only when the token is selected
+- Fill texture animation: scrolling fill texture with configurable angle and speed
 
-By default, newly created auras are visible to everyone so long as the token itself is visible. This can be changed in the 'Visibility' tab of the aura's config.
+**Line glow**
+- Optional blur/glow filter on the border line, with configurable strength
 
-There are some options you can choose from in the dropdown, similar to the Foundry's default "Display Bar" option for token resource bars.
+**Radius offset**
+- Pixel-level inward/outward nudge applied to the aura shape, independent of radius
 
-You can also fine-tune the visibility conditions, though this is a little more advanced:
+**Combat-only mode**
+- Aura can be configured to only appear while a combat encounter is active
 
-![Visibility config](./docs/img/visibility-matrix.png)
+**Unified aura rendering**
+- When multiple tokens share an identical aura configuration their auras visually merge into a single shape (fill and border fuse seamlessly)
 
-The custom setting enables the checkbox table below the dropdown. This table shows a list of 'states' in the first column, followed by a checkbox for owner and non-owner visibility.
 
-GAA computes visibility by checking which states are applicable, determining whether you are an owner of the token or not, then looking up whether the checkbox is ticked; If so, then the aura is visible. If there are multiple applicable states (for example targeted AND hovered), then the aura will show if ANY of the appliable states are ticked. The so-called 'Default' state is slightly special in that it applies ONLY when there are no other applicable states (i.e. when you are NOT hovering, and NOT targeting, and NOT the token's turn etc.).
+**THT tab enhancements**
+- `onlyWhenAltPressed`: Terrain Height Tools ruler only activates while Alt is held
+- `onlyWhenTargeted`: Terrain Height Tools ruler only activates when the token is targeted
 
-In the above example, the aura is visible to a user when that user is hovering the token; OR when the token is selected/controlled (only possible by it's owner); OR if the user owns the token and it is that token's turn in the combat tracker.
 
-### Automation
 
-Automation is the broad category for doing things when tokens interact with auras. See the documentation for the various automation types offered:
+## Credits
 
-- [Effects](./docs/automation.md#effects) - For automatically applying or removing active effects to tokens when tokens are inside auras.
-- [Macros](./docs/automation.md#macros) - For running macros when events happen relating to auras.
-- [Sequencer](./docs/automation.md#sequencer) (If the Sequencer module is installed) - For playing effects on tokens inside an aura.
-- [Terrain Height Tools](./docs/automation.md#terrain-height-tools) (If THT module is installed) - For showing line of sight rulers while dragging tokens.
-
-### Presets
-
-If you have an aura that you want to re-use in many places, or you wish to automatically apply auras to newly created tokens, you can use the preset functionality.
-
-Note that presets are saved to the Foundry world, meaning that any other players that have permission to update their tokens will be able to add saved presets. You require GM permissions to be able to save, edit, or delete presets however.
-
-To create a preset, you can either open the context menu of an aura that you have already created and choose 'Save as Preset', or you can open the GAA preset manager in Foundry's game settings panel and create a new one from there.
-
-To add a preset to a token or item, click the <kbd>+</kbd> button in the aura table and choose the 'Add Preset' item, then choose the preset you wish to add.
-
-You can use the preset manager panel to edit or delete existing presets. Editing a preset will NOT change any cases where this preset has been added to a token/item.
-Here, you can also choose actor types for the "Auto-apply to" setting. What this does is when tokens that represent an actor of this type are created on the scene, the aura will automatically be added to that token (if an aura with the same name does not already exist).
-
-Note that the enabled/disabled toggle in the preset manager determines the initial enabled/disabled state of the aura. It does not enable or disable the preset itself (i.e. a disabled aura will still show up in the 'Add Preset' menu and will still be auto-applied to relevant tokens).
-
-### Square Grids
-
-When dealing with square grids, there are different ways of handling diagonals. You can configure which rules Grid-Aware Auras uses in the module settings. Which one you choose will depend on your game. GAA supports the following:
-
-|Name|Picture|Description|
-|-|-|-|
-|Equidistant (1/1/1)|![Equidistant example](./docs/img/square-equidistant.png)|In this ruleset, moving diagonally always costs 1 (i.e. the same as moving horizontally or vertically). Therefore, the resulting aura ends up being a large square around the token. For example, this is how D&D5E usually works.|
-|Alternating (1/2/1)|![Alternating example](./docs/img/square-alternating.png)|In this ruleset, the first diagonal costs 1, the second 2, the third 1 again, then 2 again, etc. This is the technique that Pathfinder 2E uses, for example.|
-|Manhattan (2/2/2)|![Manhattan example](./docs/img/square-manhattan.png)|In this ruleset, diagonals are effectly disallowed. Moving 1 square diagonally would always cost 2 (1 horizontal and 1 vertical).|
-|Exact (√2/√2/√2)|![Exact example](./docs/img/square-exact.png)|Also known as euclidean, this ruleset treats diagonals as √2. This is the same area you would get if you used Foundry's circle template tool with an equivalent radius from the centre of each cell.
-
-_(Numbers are for illustrative purposes only)_
-
-### Collision Detection
-
-A quick note on collision detection: the collisions to test if a token is inside an aura is done by checking the centre of each cell under the token. For example, on a 3x3 token, the points tested would be here on hex and square grids (shown in red).
-
-![Test points for a 3x3 token](./docs/img/collision-detection.png)
-
-GAA does not check from the vertices of the token's border because rounding errors and imprecision with the geometry can cause false positives. It's far easier to just check the centre cells like this and in most cases it will make little difference. In future I _may_ change this or add alternative methods, but for now it will stay like this.
-
-The exception to this is gridless scenes, which instead **do** check from the edge of the aura.
-
-## See Also
-- [Automation Guide](./docs/automation.md)
-- [API Reference](./docs/api.md)
-- [Hooks](./docs/hooks.md)
-- [Custom Aura Target Filters](./docs/custom-aura-target-filters.md)
-
-## Roadmap
-
-Features that I will be looking to add to Grid-Aware Auras in future (in rough order of priority):
-
-- [ ] Setting auras by active effects (e.g. allowing effects to alter the range of an aura).
+Original module by [Wibble199](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras) — all credit for the core system goes to them.

@@ -1,4 +1,4 @@
-/** @import { AuraConfig, EffectConfig, MacroConfig SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
+/** @import { AuraConfig, EffectConfig, MacroConfig, SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
@@ -110,7 +110,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 	 * @param {() => void} [options.onClose]
 	 * @param {string} [options.parentId]
 	 * @param {Object} [options.attachTo]
-	 * @param {RadiusExpressionContext} [options.radiusContext]
+	 * @param {{ actor?: Actor | undefined; item?: Item | undefined; }} [options.radiusContext]
 	 */
 	constructor(aura, { disabled = false, onChange, onClose, parentId, attachTo, radiusContext, ...options } = {}) {
 		super(options);
@@ -128,8 +128,6 @@ export class AuraConfigApplication extends ApplicationV2 {
 		// the document schemas to get the data path suggestions. If we do have an actor in the context, then we can use
 		// that instead. We should prefer the context when possible as it will also include computed properties that
 		// aren't in the schema.
-		// If there is an actor but no item, we're likely in the context of an aura that's being applied to a token, so
-		// we don't need to add the item data model in here as it's irrelevant (i.e. no special handling for this case).
 		this.#datapathAutocompleteSuggestions = radiusContext?.actor
 			? collectDataPathsFromObject(radiusContext)
 			: [
@@ -194,9 +192,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 	}
 
 	#geometryTab = () => {
-		const radiusIsInvalidPath = typeof calculateAuraRadius(this.#aura.radius, this.#radiusContext) !== "number";
-		const innerRadiusIsInvalidPath = this.#aura.innerRadius !== "" && // innerRadius is optional
-			typeof calculateAuraRadius(this.#aura.innerRadius, this.#radiusContext) !== "number";
+		const radiusIsInvalidPath = typeof this.#aura.radius !== "number"
+			&& this.#aura.radius?.length > 0
+			&& isNaN(parseInt(this.#aura.radius))
+			&& typeof calculateAuraRadius(this.#aura.radius, this.#radiusContext) !== "number";
+
+		const innerRadiusIsInvalidPath = this.#aura.innerRadius !== ""
+			&& typeof calculateAuraRadius(this.#aura.innerRadius, this.#radiusContext) !== "number";
 
 		return html`
 			<div class="standard-form">
@@ -234,6 +236,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</div>
 
 				<div class="form-group">
+					<label>Radius Offset <span class="units">(px)</span></label>
+					<div class="form-fields">
+						<input type="number" name="radiusOffset" .value=${this.#aura.radiusOffset ?? 0} required step="1" ?disabled=${this.#disabled}>
+					</div>
+				</div>
+
+				<div class="form-group">
 					<label>Position</label>
 					<div class="form-fields">
 						<select name="position" ?disabled=${this.#disabled}>
@@ -265,7 +274,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</div>
 
 				<div class="form-group">
-					<label>${l("DRAWING.LineWidth")} <span class="units">(px)</span></label>
+					<label>${l("DRAWING.LineWidth")} <span class="units">(${l("Pixels")})</span></label>
 					<div class="form-fields">
 						<input type="number" name="lineWidth" .value=${this.#aura.lineWidth} required min="0" step="1" ?disabled=${this.#disabled}>
 					</div>
@@ -286,11 +295,49 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</div>
 
 				<div class="form-group">
+					<label>Glow / Blur <span class="units">(px)</span></label>
+					<div class="form-fields">
+						<label>
+							<input type="checkbox" name="lineGlow" .checked=${this.#aura.lineGlow ?? false} ?disabled=${this.#disabled}> Enable
+						</label>
+						<input type="number" name="lineGlowStrength" placeholder="Strength" .value=${this.#aura.lineGlowStrength ?? 10} required min="0" step="1" ?disabled=${this.#disabled || !this.#aura.lineGlow}>
+					</div>
+				</div>
+
+				<div class="form-group">
 					<label>Dash Config <span class="units">(px)</span></label>
 					<div class="form-fields">
 						<input type="number" name="lineDashSize" placeholder="Dash" .value=${this.#aura.lineDashSize} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
 						<input type="number" name="lineGapSize" placeholder="Gap" .value=${this.#aura.lineGapSize} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
 					</div>
+				</div>
+
+				<div class="form-group">
+					<label>Animation</label>
+					<div class="form-fields">
+						<label>
+							<input type="checkbox" name="animation" .checked=${this.#aura.animation ?? false} ?disabled=${this.#disabled || (!isDashed && this.#aura.animationType !== "pulse")}> Enable
+						</label>
+						<select name="animationType" .value=${this.#aura.animationType ?? "scroll"} ?disabled=${this.#disabled || !this.#aura.animation}>
+							<option value="scroll">Scroll</option>
+							<option value="pulse">Pulse</option>
+						</select>
+						<input type="number" name="animationSpeed" placeholder="Speed" .value=${this.#aura.animationSpeed ?? 1} required step="0.1" ?disabled=${this.#disabled || !this.#aura.animation}>
+					</div>
+				</div>
+
+				<div class="form-group slim">
+					<label>
+						<input type="checkbox" name="pulseToMax" .checked=${this.#aura.pulseToMax ?? false} ?disabled=${this.#disabled || !this.#aura.animation || this.#aura.animationType !== "pulse"}>
+						Pulse To Max (Upwards)
+					</label>
+				</div>
+
+				<div class="form-group slim">
+					<label>
+						<input type="checkbox" name="animationWhenSelected" .checked=${this.#aura.animationWhenSelected ?? false} ?disabled=${this.#disabled || !this.#aura.animation}>
+						Only When Selected
+					</label>
 				</div>
 			</div>
 		`;
@@ -349,12 +396,48 @@ export class AuraConfigApplication extends ApplicationV2 {
 						<input type="number" name="fillTextureScale.y" placeholder="y" .value=${this.#aura.fillTextureScale.y} required ?disabled=${this.#disabled || !isPattern}>
 					</div>
 				</div>
+
+				<div class="form-group">
+					<label>Texture Animation</label>
+					<div class="form-fields">
+						<label>
+							<input type="checkbox" name="fillAnimation" .checked=${this.#aura.fillAnimation ?? false} ?disabled=${this.#disabled || !isPattern}> Enable
+						</label>
+						<input type="number" name="fillAnimationSpeed" placeholder="Speed" .value=${this.#aura.fillAnimationSpeed ?? 0} required step="0.1" ?disabled=${this.#disabled || !isPattern || !this.#aura.fillAnimation}>
+						<input type="number" name="fillAnimationAngle" placeholder="Angle" .value=${this.#aura.fillAnimationAngle ?? 0} required step="1" ?disabled=${this.#disabled || !isPattern || !this.#aura.fillAnimation}>
+					</div>
+				</div>
 			</div>
 		`;
 	};
 
 	#visibilityTab = () => html`
 		<div class="standard-form">
+			<div class="form-group slim">
+				<label>
+					<input type="checkbox" name="onlyEnabledInCombat" .checked=${this.#aura.onlyEnabledInCombat ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
+					${l("GRIDAWAREAURAS.OnlyEnabledInCombat")}
+				</label>
+			</div>
+
+			<div class="form-group slim">
+				<label>
+					<input type="checkbox" name="unified" .checked=${this.#aura.unified ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
+					Unified
+				</label>
+			</div>
+
+			<div class="form-group">
+				<label>${l("GRIDAWAREAURAS.KeyPressMode")}</label>
+				<div class="form-fields">
+					<select name="keyPressMode" .value=${this.#aura.keyPressMode ?? "DISABLED"} ?disabled=${this.#disabled}>
+						<option value="DISABLED">${l("GRIDAWAREAURAS.KeyPressModeDisabled")}</option>
+						<option value="ONLY_WHEN_PRESSED">${l("GRIDAWAREAURAS.KeyPressModeOnlyWhenPressed")}</option>
+						<option value="ALSO_WHEN_PRESSED">${l("GRIDAWAREAURAS.KeyPressModeAlsoWhenPressed")}</option>
+					</select>
+				</div>
+			</div>
+
 			<div class="form-group">
 				<label>Display Aura</label>
 				<div class="form-fields">
@@ -394,11 +477,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 					<div class="visibility-row">
 						<span class="title">Controlled/Selected</span>
 						<input type="checkbox" class="owner" name="ownerVisibility.controlled" .checked=${this.#aura.ownerVisibility.controlled}>
+						<input type="checkbox" class="nonowner" disabled>
 					</div>
 
 					<div class="visibility-row">
 						<span class="title">Dragging</span>
 						<input type="checkbox" class="owner" name="ownerVisibility.dragging" .checked=${this.#aura.ownerVisibility.dragging}>
+						<input type="checkbox" class="nonowner" disabled>
 					</div>
 
 					<div class="visibility-row">
@@ -917,6 +1002,17 @@ export class AuraConfigApplication extends ApplicationV2 {
 
 	#automationThtTab = () => html`
 		<div class="standard-form">
+			<div class="form-group slim">
+				<label>
+					<input type="checkbox" name="terrainHeightTools.onlyWhenAltPressed" .checked=${this.#aura.terrainHeightTools?.onlyWhenAltPressed ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
+					${l("GRIDAWAREAURAS.ThtOnlyWhenAltPressed")}
+				</label>
+				<label>
+					<input type="checkbox" name="terrainHeightTools.onlyWhenTargeted" .checked=${this.#aura.terrainHeightTools?.onlyWhenTargeted ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
+					Only When Targeted
+				</label>
+			</div>
+
 			<div class="form-group">
 				<label>Token Ruler on Drag</label>
 				<div class="form-fields">
@@ -937,7 +1033,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 		</div>
 	`;
 
-	/** @param {number} tabIndex  */
+	/** @param {number} tabIndex */
 	#setSelectedTab(tabIndex) {
 		this.#selectedTabIndex = tabIndex;
 		this.render();

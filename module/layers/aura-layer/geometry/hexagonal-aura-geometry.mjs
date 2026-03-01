@@ -102,14 +102,6 @@ export class HexagonalAuraGeometry {
 	 * Gets the vertices that make up the hexagonal border for this aura, assuming a grid size of 1.
 	 */
 	static #getPoints(width, height, radius, shape, isColumnar) {
-		// If the token is less than 1 on both dimesions, but has equal sides it can be treated as 1 x 1.
-		// If the token is less then 1 on a side, but isn't equal, Foundry shows it as a square and we can't generate a
-		// hex border for it
-		if (width < 1 && width === height)
-			width = height = 1;
-		else if (width < 1 || height < 1)
-			return [];
-
 		const primaryAxisSize = isColumnar ? height : width;
 		const secondaryAxisSize = isColumnar ? width : height;
 
@@ -570,8 +562,16 @@ const getRectangleHexTokenSpaces = cacheReturn(
  * @param {number} gridSize Size of the grid.
  */
 function getSpacesUnderHexToken(x, y, width, height, shape, isColumnar, gridSize) {
+	// If the token is less than 1 on both dimesions, but has equal sides it can be treated as 1 x 1.
+	// If the token is less then 1 on a side, but isn't equal, Foundry shows it as a square and we can't generate a
+	// hex border for it
+	if (width < 1 && width === height)
+		width = height = 1;
+	else if (width < 1 || height < 1)
+		return [];
+
 	// Non-integer token sizes are not supported - use center of token in this case
-	if (width % 1 !== 0 || height % 1 !== 0 || width < 1 || height < 1)
+	if (width % 1 !== 0 || height % 1 !== 0)
 		return [{ x: x + (width / 2 * gridSize), y: y + (height / 2 * gridSize) }];
 
 	const primaryAxisSize = isColumnar ? height : width;

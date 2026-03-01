@@ -1,8 +1,8 @@
 /** @import { AuraConfig, AuraConfigWithRadius } from "../../data/aura.mjs" */
 /** @import { AuraGeometry } from "./geometry/index.mjs" */
-/** @import { AURA_POSITIONS } from "../../consts.mjs" */
 import { LINE_TYPES, MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
+import { isKeyPressed } from "../../main.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { drawComplexPath, drawDashedComplexPath } from "../../utils/pixi-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
@@ -26,8 +26,21 @@ export class Aura {
 
 	#isVisible = false;
 
+	#animationOffset = 0;
+	#fillAnimationOffset = { x: 0, y: 0 };
+	#animating = false;
+	#boundTick;
+
+	#suppressed = false;
+
 	/** @type {PIXI.Graphics} */
 	#graphics;
+
+	/** @type {PIXI.Graphics} */
+	#fillGraphics;
+
+	/** @type {PIXI.Graphics} */
+	#lineGraphics;
 
 	/**
 	 * The geometry of the aura, relative to the token position.
@@ -48,6 +61,13 @@ export class Aura {
 		this.#token = token;
 		this.#graphics = new PIXI.Graphics();
 		this.#graphics.sortLayer = 690; // Render just below tokens
+
+		this.#fillGraphics = new PIXI.Graphics();
+		this.#lineGraphics = new PIXI.Graphics();
+		this.#graphics.addChild(this.#fillGraphics);
+		this.#graphics.addChild(this.#lineGraphics);
+
+		this.#boundTick = this.#tick.bind(this);
 	}
 
 	get graphics() {
@@ -56,6 +76,60 @@ export class Aura {
 
 	get config() {
 		return this.#config;
+	}
+
+	get isVisible() {
+		return this.#isVisible;
+	}
+
+	set suppressed(value) {
+		this.#suppressed = value;
+		this.updateVisibility();
+	}
+
+	isWorldPointInside(wx, wy) {
+		if (!this.#geometry?._isPointInside) return false;
+		const lx = wx - this.#graphics.x - this.#fillGraphics.position.x;
+		const ly = wy - this.#graphics.y - this.#fillGraphics.position.y;
+		if (!this.#geometry._isPointInside(lx, ly)) return false;
+		// Points inside the inner hole are not actually filled
+		if (this.#innerGeometry?._isPointInside?.(lx, ly)) return false;
+		return true;
+	}
+
+	/**
+	 * Yields the geometry path translated to world coordinates.
+	 * @yields {import("../../utils/pixi-utils.mjs").PathCommand}
+	 */
+	*getWorldPath() {
+		if (!this.#geometry) return;
+		const ox = this.#graphics.x + this.#fillGraphics.position.x;
+		const oy = this.#graphics.y + this.#fillGraphics.position.y;
+		for (const cmd of this.#geometry.getPath()) {
+			if (cmd.type === "a") {
+				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
+			} else {
+				yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+			}
+		}
+	}
+
+	/**
+	 * Yields the inner geometry (hole) path translated to world coordinates.
+	 * Returns nothing if this aura has no inner radius.
+	 * @yields {import("../../utils/pixi-utils.mjs").PathCommand}
+	 */
+	*getInnerWorldPath() {
+		if (!this.#innerGeometry) return;
+		const ox = this.#graphics.x + this.#fillGraphics.position.x;
+		const oy = this.#graphics.y + this.#fillGraphics.position.y;
+		for (const cmd of this.#innerGeometry.getPath()) {
+			if (cmd.type === "a") {
+				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
+			} else {
+				yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+			}
+		}
 	}
 
 	/**
@@ -100,10 +174,82 @@ export class Aura {
 		this.#graphics.elevation = tokenDelta?.elevation ?? this.#token.document.elevation;
 	}
 
+	get animationOffset() { return this.#animationOffset; }
+	get fillAnimationOffset() { return this.#fillAnimationOffset; }
+
 	updateVisibility() {
-		// Transition opacity
 		this.#isVisible = this.#getVisibility();
-		this.#graphics.alpha = this.#isVisible ? 1 : 0;
+		this.#graphics.alpha = (this.#isVisible && !this.#suppressed) ? 1 : 0;
+
+		// Handle animation state - suppressed auras still tick to advance offset for the unified group
+		let shouldAnimate = this.#isVisible && (this.#config.animation === true || this.#config.fillAnimation === true);
+		if (shouldAnimate && !this.#suppressed && this.#config.animationWhenSelected && !this.#token.controlled) {
+			shouldAnimate = false;
+		}
+
+		if (shouldAnimate && !this.#animating) {
+			canvas.app.ticker.add(this.#boundTick);
+			this.#animating = true;
+		} else if (!shouldAnimate && this.#animating) {
+			canvas.app.ticker.remove(this.#boundTick);
+			this.#animating = false;
+			// Reset opacity to base value when animation stops
+			this.#lineGraphics.alpha = this.#config.lineOpacity ?? 1;
+		}
+	}
+
+	#tick(_dt) {
+		if (!this.#isVisible) return;
+
+		if (this.#config.animation) {
+			const speed = this.#config.animationSpeed ?? 1;
+			const type = this.#config.animationType ?? "scroll";
+
+			if (type === "pulse") {
+				this.#animationOffset -= speed;
+				if (!this.#suppressed) {
+					const baseOpacity = this.#config.lineOpacity ?? 1;
+					const sinVal = (Math.sin(this.#animationOffset * 0.1) + 1) / 2;
+
+					let alpha;
+					if (this.#config.pulseToMax) {
+						alpha = baseOpacity + (sinVal * (1 - baseOpacity));
+					} else {
+						alpha = 0.2 + (sinVal * (baseOpacity - 0.2));
+					}
+
+					this.#lineGraphics.alpha = alpha;
+				}
+			} else {
+				// Scroll
+				this.#animationOffset -= speed;
+				if (!this.#suppressed) {
+					this.#lineGraphics.alpha = 1;
+				}
+			}
+		}
+
+		if (this.#config.fillAnimation) {
+			const speed = this.#config.fillAnimationSpeed ?? 0;
+			const angle = (this.#config.fillAnimationAngle ?? 0) * (Math.PI / 180);
+
+			this.#fillAnimationOffset.x += Math.cos(angle) * speed;
+			this.#fillAnimationOffset.y += Math.sin(angle) * speed;
+		}
+
+		if (this.#suppressed) return;
+
+		if (this.#geometry) {
+			const width = this.#token.document.width;
+			const height = this.#token.document.height;
+			const radius = this.#radius;
+			const hexagonalShape = this.#token.document.hexagonalShape;
+
+			const type = this.#config.animationType ?? "scroll";
+			if ((this.#config.animation && type === "scroll") || this.#config.fillAnimation) {
+				this.#redraw(width, height, radius, this.#innerRadius, hexagonalShape);
+			}
+		}
 	}
 
 	/**
@@ -129,6 +275,7 @@ export class Aura {
 	}
 
 	destroy() {
+		canvas.app.ticker.remove(this.#boundTick);
 		this.#graphics.destroy();
 	}
 
@@ -155,7 +302,8 @@ export class Aura {
 
 		// Auras with negative radii are not rendered, neither are those where the innerRadius >= radius.
 		if (typeof radius !== "number" || radius < 0 || (typeof innerRadius === "number" && innerRadius >= radius)) {
-			this.#graphics.clear();
+			this.#fillGraphics.clear();
+			this.#lineGraphics.clear();
 			this.#geometry = null;
 			this.#innerGeometry = null;
 			return;
@@ -165,54 +313,81 @@ export class Aura {
 		// This is fairly arbitrary, but if it's too high, the browser can crash trying to generate geometry.
 		radius = Math.min(radius, 1000);
 
-		this.#geometry = createGeometry(radius);
+		// Calculate modified grid size for pixel offset scaling (radiusOffset feature)
+		const offset = this.#config.radiusOffset ?? 0;
+		const effectiveRadius = radius + (Math.max(width, height) / 2);
+		const scaleFactor = effectiveRadius > 0 ? (offset / effectiveRadius) : 0;
+		const modifiedGridSize = canvas.grid.size + scaleFactor;
+
+		this.#geometry = createGeometry(radius, modifiedGridSize);
 		this.#innerGeometry = typeof innerRadius === "number" && innerRadius >= 0
-			? createGeometry(innerRadius)
+			? createGeometry(innerRadius, modifiedGridSize)
 			: null;
 
+		// Compensate for center shift due to scaling from top-left (0,0)
+		const dx = -(width / 2) * scaleFactor;
+		const dy = -(height / 2) * scaleFactor;
+		this.#fillGraphics.position.set(dx, dy);
+		this.#lineGraphics.position.set(dx, dy);
+
 		if (!this.#geometry) {
-			this.#graphics.clear();
+			this.#fillGraphics.clear();
+			this.#lineGraphics.clear();
 			return;
 		}
 
-		// Load the texture BEFORE clearing, otherwise there's a noticable flash every time something is chaned.
+		// Handle Glow
+		if (auraConfig.lineGlow) {
+			const strength = auraConfig.lineGlowStrength ?? 10;
+			if (!this.#lineGraphics.filters?.length) {
+				this.#lineGraphics.filters = [new PIXI.filters.BlurFilter(strength)];
+			} else {
+				const filter = this.#lineGraphics.filters[0];
+				if (filter instanceof PIXI.filters.BlurFilter) {
+					filter.blur = strength;
+				}
+			}
+		} else {
+			this.#lineGraphics.filters = null;
+		}
+
+		// Load the texture BEFORE clearing, otherwise there's a noticeable flash every time something is changed.
 		const texture = auraConfig.fillType === CONST.DRAWING_FILL_TYPES.PATTERN
 			? await loadTexture(auraConfig.fillTexture)
 			: null;
 
-		this.#graphics.clear();
+		this.#fillGraphics.clear();
+		this.#lineGraphics.clear();
 
-		this.#configureFillStyle({ ...auraConfig, fillTexture: texture });
-
-		// Becasue of the way dashed paths are implemented and because of inner radius (holes), it is easier to draw the
-		// background without the borders, the draw the outer/inner borders afterwards.
-		// 1. Fill
-		this.#configureLineStyle({ lineType: LINE_TYPES.NONE });
-		drawComplexPath(this.#graphics, this.#geometry.getPath());
-		if (this.#innerGeometry) {
-			this.#graphics.beginHole();
-			drawComplexPath(this.#graphics, this.#innerGeometry.getPath());
-			this.#graphics.endHole();
+		// 1. Fill (with inner radius hole if applicable)
+		const fillConfig = { ...auraConfig, fillTexture: texture };
+		if (this.#config.fillAnimation) {
+			fillConfig.fillTextureOffset = {
+				x: auraConfig.fillTextureOffset.x + this.#fillAnimationOffset.x,
+				y: auraConfig.fillTextureOffset.y + this.#fillAnimationOffset.y
+			};
 		}
-		this.#graphics.endFill();
+
+		this.#configureFillStyle(fillConfig);
+		drawComplexPath(this.#fillGraphics, this.#geometry.getPath());
+		if (this.#innerGeometry) {
+			this.#fillGraphics.beginHole();
+			drawComplexPath(this.#fillGraphics, this.#innerGeometry.getPath());
+			this.#fillGraphics.endHole();
+		}
+		this.#fillGraphics.endFill();
 
 		// 2. Borders
 		this.#configureLineStyle(auraConfig);
-		switch (auraConfig.lineType) {
-			case LINE_TYPES.SOLID: {
-				drawComplexPath(this.#graphics, this.#geometry.getPath());
-				if (this.#innerGeometry)
-					drawComplexPath(this.#graphics, this.#innerGeometry.getPath());
-				break;
-			}
-
-			case LINE_TYPES.DASHED: {
-				const dashConfig = { dashSize: auraConfig.lineDashSize, gapSize: auraConfig.lineGapSize };
-				drawDashedComplexPath(this.#graphics, this.#geometry.getPath(), dashConfig);
-				if (this.#innerGeometry)
-					drawDashedComplexPath(this.#graphics, this.#innerGeometry.getPath(), dashConfig);
-				break;
-			}
+		if (auraConfig.lineType === LINE_TYPES.DASHED) {
+			const dashConfig = { dashSize: auraConfig.lineDashSize, gapSize: auraConfig.lineGapSize, offset: this.#animationOffset };
+			drawDashedComplexPath(this.#lineGraphics, this.#geometry.getPath(), dashConfig);
+			if (this.#innerGeometry)
+				drawDashedComplexPath(this.#lineGraphics, this.#innerGeometry.getPath(), dashConfig);
+		} else if (auraConfig.lineType === LINE_TYPES.SOLID) {
+			drawComplexPath(this.#lineGraphics, this.#geometry.getPath());
+			if (this.#innerGeometry)
+				drawComplexPath(this.#lineGraphics, this.#innerGeometry.getPath());
 		}
 
 		return;
@@ -220,11 +395,12 @@ export class Aura {
 		/**
 		 * Creates a geometry of the specified radius for the current grid type and scoped token size/shape.
 		 * @param {number} r
+		 * @param {number} gridSize
 		 */
-		function createGeometry(r) {
+		function createGeometry(r, gridSize) {
 			switch (canvas.grid.type) {
 				case CONST.GRID_TYPES.GRIDLESS:
-					return new GridlessAuraGeometry(width, height, r, canvas.grid.size);
+					return new GridlessAuraGeometry(width, height, r, gridSize);
 
 				case CONST.GRID_TYPES.SQUARE:
 					return new SquareAuraGeometry(
@@ -232,7 +408,7 @@ export class Aura {
 						height,
 						r,
 						game.settings.get(MODULE_NAME, SQUARE_GRID_MODE_SETTING),
-						canvas.grid.size
+						gridSize
 					);
 
 				default: // hexagonal
@@ -242,7 +418,7 @@ export class Aura {
 						r,
 						hexagonalShape,
 						[CONST.GRID_TYPES.HEXEVENQ, CONST.GRID_TYPES.HEXODDQ].includes(canvas.grid.type),
-						canvas.grid.size
+						gridSize
 					);
 			}
 		}
@@ -257,7 +433,7 @@ export class Aura {
 		/** @type {{ x: number; y: number }} */
 		let { x, y } = pickProperties(["x", "y"], ...positions);
 
-		// If the token has a size of < 1 on a non-gridless scen), then we need to snap the aura to the nearest grid cell
+		// If the token has a size of < 1 on a non-gridless scene, snap the aura to the nearest grid cell
 		const { width, height } = this.#token.document;
 		if ((width < 1 || height < 1) && canvas.grid.type !== CONST.GRID_TYPES.GRIDLESS) {
 			const gridCoords = canvas.grid.getOffset({
@@ -283,7 +459,7 @@ export class Aura {
 		if (canvas.grid.type !== CONST.GRID_TYPES.SQUARE)
 			return;
 
-		const position = this.#config.position;
+		const position = this.#config?.position;
 		switch (position) {
 			case "TOP_LEFT": return { x: 0, y: 0 };
 			case "TOP_RIGHT": return { x: 1, y: 0 };
@@ -299,6 +475,25 @@ export class Aura {
 		// If token is hidden or set as invisible in config, then it is definitely not visible
 		if (!this.#token.visible || this.#token.hasPreview || !this.#config.enabled) {
 			return false;
+		}
+
+		// If aura should only be enabled in combat, hide it when there's no active combat
+		if (this.#config.onlyEnabledInCombat) {
+			const isCombatActive = game.combat?.started ?? false;
+			if (!isCombatActive) return false;
+		}
+
+		// Check if key is pressed
+		const keyPressed = isKeyPressed(this.#config.keyToPress);
+
+		// ONLY_WHEN_PRESSED: if the key is not held, never show regardless of any other condition
+		if (this.#config.keyPressMode === "ONLY_WHEN_PRESSED" && !keyPressed) {
+			return false;
+		}
+
+		// ALSO_WHEN_PRESSED: if the key is held, always show regardless of other conditions
+		if (this.#config.keyPressMode === "ALSO_WHEN_PRESSED" && keyPressed) {
+			return true;
 		}
 
 		// Otherwise, determine the visibility based on either ownerVisibility or nonOwnerVisibility, depending on the
@@ -351,11 +546,11 @@ export class Aura {
 	#configureLineStyle({
 		lineType = LINE_TYPES.NONE, lineWidth = 0, lineColor = "#000000", lineOpacity = 0
 	} = {}) {
-		this.#graphics.lineStyle({
+		this.#lineGraphics.lineStyle({
 			color: Color.from(lineColor),
 			alpha: lineOpacity,
 			width: lineType === LINE_TYPES.NONE ? 0 : lineWidth,
-			alignment: 0.5
+			alignment: 0
 		});
 	}
 
@@ -367,18 +562,18 @@ export class Aura {
 	} = {}) {
 		const color = Color.from(fillColor ?? "#000000");
 		if (fillType === CONST.DRAWING_FILL_TYPES.SOLID) {
-			this.#graphics.beginFill(fillColor, fillOpacity);
+			this.#fillGraphics.beginFill(fillColor, fillOpacity);
 		} else if (fillType === CONST.DRAWING_FILL_TYPES.PATTERN && fillTexture) {
 			const { x: xOffset, y: yOffset } = fillTextureOffset;
 			const { x: xScale, y: yScale } = fillTextureScale;
-			this.#graphics.beginTextureFill({
+			this.#fillGraphics.beginTextureFill({
 				texture: fillTexture,
 				color,
 				alpha: fillOpacity,
 				matrix: new PIXI.Matrix(xScale / 100, 0, 0, yScale / 100, xOffset, yOffset)
 			});
 		} else { // NONE
-			this.#graphics.beginFill(0x000000, 0);
+			this.#fillGraphics.beginFill(0x000000, 0);
 		}
 	}
 }

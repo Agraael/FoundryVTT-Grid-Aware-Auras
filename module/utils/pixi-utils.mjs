@@ -69,7 +69,6 @@ export function drawDashedComplexPath(graphics, commands, { dashSize = 20, gapSi
 	let curX = 0, curY = 0;
 	graphics.moveTo(0, 0);
 
-	// Drawing state - whether we are drawing a dash or a gap, plus how much left there is to draw.
 	// dashGapRemaining will carry on around corners to 'bend' the dash and make it look more natural.
 	let dash = false;
 	let dashGapRemaining = offset;
