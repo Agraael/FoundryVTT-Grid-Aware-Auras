@@ -222,9 +222,10 @@ export class Aura {
 				}
 			} else {
 				// Scroll
-				this.#animationOffset -= speed;
+				const direction = this.#config.lineAnimationInvert ? -1 : 1;
+				this.#animationOffset -= speed * direction;
 				if (!this.#suppressed) {
-					this.#lineGraphics.alpha = 1;
+					this.#lineGraphics.alpha = this.#config.lineOpacity ?? 1;
 				}
 			}
 		}
@@ -380,7 +381,12 @@ export class Aura {
 		// 2. Borders
 		this.#configureLineStyle(auraConfig);
 		if (auraConfig.lineType === LINE_TYPES.DASHED) {
-			const dashConfig = { dashSize: auraConfig.lineDashSize, gapSize: auraConfig.lineGapSize, offset: this.#animationOffset };
+			const isScrolling = auraConfig.animation && (auraConfig.animationType ?? "scroll") === "scroll";
+			const dashConfig = {
+				dashSize: auraConfig.lineDashSize,
+				gapSize: auraConfig.lineGapSize,
+				offset: isScrolling ? this.#animationOffset : 0
+			};
 			drawDashedComplexPath(this.#lineGraphics, this.#geometry.getPath(), dashConfig);
 			if (this.#innerGeometry)
 				drawDashedComplexPath(this.#lineGraphics, this.#innerGeometry.getPath(), dashConfig);

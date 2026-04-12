@@ -22,7 +22,7 @@ import {
 	macroConfigDefaults,
 	sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
-import { classMap, createRef, html, nothing, ref, render, when } from "../lib/lit-all.min.js";
+import { classMap, createRef, html, nothing, ref, render, styleMap, when } from "../lib/lit-all.min.js";
 import { selectOptions } from "../utils/lit-utils.mjs";
 import { isSequencerActive, isTerrainHeightToolsActive, partialEqual } from "../utils/misc-utils.mjs";
 
@@ -326,10 +326,17 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
+				<div class="form-group slim" style=${styleMap({ display: (this.#aura.animation && this.#aura.animationType === "scroll" && isDashed) ? "block" : "none" })}>
+					<label>
+						<input type="checkbox" name="lineAnimationInvert" .checked=${this.#aura.lineAnimationInvert ?? false} ?disabled=${this.#disabled}>
+						Invert Direction
+					</label>
+				</div>
+
 				<div class="form-group slim">
 					<label>
 						<input type="checkbox" name="pulseToMax" .checked=${this.#aura.pulseToMax ?? false} ?disabled=${this.#disabled || !this.#aura.animation || this.#aura.animationType !== "pulse"}>
-						Pulse To Max (Upwards)
+						Pulse To Max
 					</label>
 				</div>
 

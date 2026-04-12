@@ -147,19 +147,27 @@ export class UnifiedAuraGroup {
 		if (config && this.#lineGfx) {
 			const animOffset = this.#leadAura.animationOffset;
 
-			if (config.animationType === "pulse") {
-				const baseOpacity = config.lineOpacity ?? 1;
-				const sinVal = (Math.sin(animOffset * 0.1) + 1) / 2;
-				const alpha = config.pulseToMax
-					? baseOpacity + (sinVal * (1 - baseOpacity))
-					: 0.2 + (sinVal * (baseOpacity - 0.2));
+			const leadsConfig = this.#leadAura.config;
+			if (leadsConfig.animation && leadsConfig.animationType === "pulse") {
+				const sinVal = (Math.sin(this.#leadAura.animationOffset * 0.1) + 1) / 2;
+				const baseOpacity = leadsConfig.lineOpacity ?? 1;
+
+				let alpha;
+				if (leadsConfig.pulseToMax) {
+					alpha = baseOpacity + (sinVal * (1 - baseOpacity));
+				} else {
+					alpha = 0.2 + (sinVal * (baseOpacity - 0.2));
+				}
+
 				this.#lineGfx.alpha = alpha;
-			} else if (config.lineType === LINE_TYPES.DASHED) {
+			}
+
+			if (leadsConfig.animation && leadsConfig.animationType === "scroll" && leadsConfig.lineType === LINE_TYPES.DASHED) {
 				this.#lineGfx.clear();
 				this.#lineGfx.lineStyle({
-					color: Color.from(config.lineColor ?? "#000000"),
-					alpha: config.lineOpacity ?? 0,
-					width: config.lineWidth ?? 0,
+					color: Color.from(leadsConfig.lineColor ?? "#000000"),
+					alpha: leadsConfig.lineOpacity ?? 0,
+					width: leadsConfig.lineWidth ?? 0,
 					alignment: 0
 				});
 				const dashOpts = {

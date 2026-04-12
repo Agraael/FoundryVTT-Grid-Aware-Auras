@@ -70,8 +70,15 @@ export function drawDashedComplexPath(graphics, commands, { dashSize = 20, gapSi
 	graphics.moveTo(0, 0);
 
 	// dashGapRemaining will carry on around corners to 'bend' the dash and make it look more natural.
-	let dash = false;
-	let dashGapRemaining = offset;
+	const totalPeriod = dashSize + gapSize;
+	let normalizedOffset = ((offset % totalPeriod) + totalPeriod) % totalPeriod;
+
+	let dash = true;
+	let dashGapRemaining = dashSize - normalizedOffset;
+	if (dashGapRemaining <= 0) {
+		dash = false;
+		dashGapRemaining += gapSize;
+	}
 
 	for (const command of commands) {
 		switch (command.type) {

@@ -2,7 +2,7 @@
 import { DOCUMENT_AURAS_FLAG, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { createRadiusExtensionProxy, hasRadiusExtensions } from "./aura-radius-expression-extensions.mjs";
 
-export const latestAuraConfigVersion = 1;
+export const latestAuraConfigVersion = 2;
 
 /**
  * @typedef {Object} AuraConfig
@@ -12,9 +12,9 @@ export const latestAuraConfigVersion = 1;
  * @property {boolean} enabled
  * @property {boolean} unified
  * @property {boolean} onlyEnabledInCombat
- * @property {boolean} animation
- * @property {string} animationType
- * @property {boolean} pulseToMax
+ * @property {boolean} lineAnimationScroll
+ * @property {boolean} lineAnimationPulse
+ * @property {boolean} lineAnimationInvert
  * @property {number} animationSpeed
  * @property {boolean} animationWhenSelected
  * @property {string} keyPressMode Mode for key press visibility: "DISABLED", "ONLY_WHEN_PRESSED", "ALSO_WHEN_PRESSED"
@@ -235,8 +235,9 @@ export const auraDefaults = () => ({
 	enabled: true,
 	unified: false,
 	onlyEnabledInCombat: false,
-	animation: false,
-	animationType: "scroll",
+	lineAnimationScroll: false,
+	lineAnimationPulse: false,
+	lineAnimationInvert: false,
 	pulseToMax: false,
 	animationSpeed: 1,
 	animationWhenSelected: false,
@@ -341,6 +342,12 @@ const migrations = [
 		delete config.macro;
 
 		return config;
+	},
+	// v1 -> v2
+	// Add `lineAnimationInvert` property.
+	config => {
+		config.lineAnimationInvert = false;
+		return config;
 	}
 ];
 
@@ -353,10 +360,10 @@ export function areAurasVisuallyEqual(a, b) {
 	const props = [
 		"lineType", "lineWidth", "lineColor", "lineOpacity",
 		"lineDashSize", "lineGapSize", "lineGlow", "lineGlowStrength",
-		"radiusOffset",
+		//"radiusOffset",
 		"fillType", "fillColor", "fillOpacity", "fillTexture",
 		"fillAnimation", "fillAnimationSpeed", "fillAnimationAngle",
-		"animation", "animationType", "pulseToMax", "animationSpeed", "animationWhenSelected"
+		"animation", "animationType", "lineAnimationInvert", "pulseToMax", "animationSpeed", "animationWhenSelected"
 	];
 	for (const p of props) {
 		if (a[p] !== b[p]) return false;

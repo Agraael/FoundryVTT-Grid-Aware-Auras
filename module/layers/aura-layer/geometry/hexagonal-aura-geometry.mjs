@@ -40,6 +40,9 @@ export class HexagonalAuraGeometry {
 	 */
 	constructor(width, height, radius, shape, isColumnar, gridSize) {
 		radius = Math.round(radius);
+		// Clamp sub-cell tokens to 1x1 so border generation gets valid integer sizes
+		width = Math.max(1, Math.round(width));
+		height = Math.max(1, Math.round(height));
 		this.#points = HexagonalAuraGeometry.#getPoints(width, height, radius, shape, isColumnar)
 			.map(({ x, y }) => ({ x: x * gridSize, y: y * gridSize }));
 		({ collidableEdges: this.#collidableEdges, boundingBox: this.#boundingBox } = HexagonalAuraGeometry.#getCollisionTestData(this.#points));
