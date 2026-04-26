@@ -1,5 +1,5 @@
 /** @import { AuraConfig } from "../../data/aura.mjs"; */
-import { ENTER_LEAVE_AURA_HOOK } from "../../consts.mjs";
+import { CREATE_AURA_HOOK, DELETE_AURA_HOOK, ENTER_LEAVE_AURA_HOOK, UPDATE_AURA_HOOK } from "../../consts.mjs";
 import { getTokenAuras } from "../../data/aura.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { AuraManager } from "./aura-manager.mjs";
@@ -122,6 +122,8 @@ export class AuraLayer extends CanvasLayer {
 				canvas.primary.removeChild(previousAura.graphics);
 				previousAura.destroy();
 				this._auraManager.deregisterAura(token, previousAura.config.id);
+
+				Hooks.callAll(DELETE_AURA_HOOK, token, previousAura.config);
 			}
 
 			// If any of the auras in the token's aura array don't have a corresponding entry in the manager, create one
@@ -129,12 +131,28 @@ export class AuraLayer extends CanvasLayer {
 			for (const auraConfig of auras) {
 				const aura = previousAuras.find(a => a.config.id === auraConfig.id);
 				if (aura) {
-					aura.update(auraConfig, { tokenDelta, force });
+					const hasChanged = aura.update(auraConfig, { tokenDelta, force });
+
+					if (hasChanged) {
+						Hooks.callAll(UPDATE_AURA_HOOK,
+							token,
+							auraConfig,
+							{ x: aura.graphics.x, y: aura.graphics.y },
+							{ outer: aura.geometry, inner: aura.innerGeometry });
+					}
+
 				} else {
 					const newAura = new Aura(token);
 					newAura.update(auraConfig, { tokenDelta, force });
 					canvas.primary.addChild(newAura.graphics);
 					this._auraManager.registerAura(token, newAura);
+
+					Hooks.callAll(CREATE_AURA_HOOK,
+						token,
+						auraConfig,
+						{ x: newAura.graphics.x, y: newAura.graphics.y },
+						{ outer: newAura.geometry, inner: newAura.innerGeometry },
+						{ isInit });
 				}
 			}
 		}

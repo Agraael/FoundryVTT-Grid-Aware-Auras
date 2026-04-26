@@ -1,6 +1,5 @@
 /** @import { AuraConfig, AuraConfigWithRadius } from "../../data/aura.mjs" */
 /** @import { AuraGeometry } from "./geometry/index.mjs" */
-/** @import { AURA_POSITIONS } from "../../consts.mjs" */
 import { LINE_TYPES, MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
@@ -58,19 +57,28 @@ export class Aura {
 		return this.#config;
 	}
 
+	get geometry() {
+		return this.#geometry;
+	}
+
+	get innerGeometry() {
+		return this.#innerGeometry;
+	}
+
 	/**
 	 * Updates this aura graphic, and redraws it if required.
 	 * @param {AuraConfigWithRadius} config
 	 * @param {Object} [options]
 	 * @param {Record<string, any>} [options.tokenDelta] If provided, uses the properties from this instead of the token
 	 * @param {boolean} [options.force] Force a redraw, even if no aura properties have changed.
+	 * @returns {boolean} `true` if the something has changed, `false` if nothing has changed.
 	*/
 	update(config, { tokenDelta, force = false } = {}) {
 		const shouldRedraw = force ||
-			this.#config !== config ||
+			!foundry.utils.objectsEqual(this.#config, config) ||
 			this.#radius !== config.radiusCalculated ||
 			this.#innerRadius !== config.innerRadiusCalculated ||
-			(tokenDelta && (
+			(!!tokenDelta && (
 				"width" in tokenDelta ||
 				"height" in tokenDelta ||
 				"hexagonalShape" in tokenDelta
@@ -80,7 +88,7 @@ export class Aura {
 		this.#radius = config.radiusCalculated;
 		this.#innerRadius = config.innerRadiusCalculated;
 
-		this.updatePosition({ tokenDelta });
+		const positionChanged = this.updatePosition({ tokenDelta });
 
 		// If a relevant property has changed, do a redraw
 		if (shouldRedraw || force) {
@@ -88,22 +96,37 @@ export class Aura {
 			this.#redraw(width, height, config.radiusCalculated, config.innerRadiusCalculated, hexagonalShape);
 		}
 
-		this.updateVisibility();
+		const visibilityChanged = this.updateVisibility();
+
+		return shouldRedraw || positionChanged || visibilityChanged;
 	}
 
 	/**
 	 * @param {Object} [options]
 	 * @param {Record<string, any>} [options.tokenDelta] If provided, uses the properties from this instead of the token
+	 * @returns {boolean} `true` if the position has changed, `false` if not.
 	 */
 	updatePosition({ tokenDelta } = {}) {
+		const { x: previousX, y: previousY } = this.graphics;
+		const previousElevation = this.#graphics.elevation;
+
 		Object.assign(this.#graphics, this.#getOffset(tokenDelta, this.#token));
 		this.#graphics.elevation = tokenDelta?.elevation ?? this.#token.document.elevation;
+
+		const hasChanged = this.#graphics.x !== previousX
+			|| this.#graphics.y !== previousY
+			|| this.graphics.elevation !== previousElevation;
+
+		return hasChanged;
 	}
 
+	/** @returns {boolean} `true` if the visibility was changed, `false` if it has not changed. */
 	updateVisibility() {
 		// Transition opacity
+		const wasVisible = this.#isVisible;
 		this.#isVisible = this.#getVisibility();
 		this.#graphics.alpha = this.#isVisible ? 1 : 0;
+		return this.#isVisible !== wasVisible;
 	}
 
 	/**

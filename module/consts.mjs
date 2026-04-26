@@ -16,9 +16,12 @@ export const PRESET_SETTING = "presets";
 
 // Hooks
 const HOOK_PREFIX = "gridAwareAuras";
+export const CREATE_AURA_HOOK = `${HOOK_PREFIX}.createAura`;
+export const DELETE_AURA_HOOK = `${HOOK_PREFIX}.deleteAura`;
 export const END_MOVE_INSIDE_AURA_HOOK = `${HOOK_PREFIX}.endMoveInsideAura`;
 export const ENTER_LEAVE_AURA_HOOK = `${HOOK_PREFIX}.enterLeaveAura`;
 export const START_MOVE_INSIDE_AURA_HOOK = `${HOOK_PREFIX}.startMoveInsideAura`;
+export const UPDATE_AURA_HOOK = `${HOOK_PREFIX}.updateAura`;
 
 // Socket functions
 export const TOGGLE_EFFECT_FUNC = "toggleEffect";

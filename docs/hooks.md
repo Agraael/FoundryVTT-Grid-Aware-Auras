@@ -1,8 +1,35 @@
 # Hooks
 
+- [`gridAwareAuras.createAura`](#gridawareaurascreateaura)
+- [`gridAwareAuras.deleteAura`](#gridawareaurasdeleteaura)
 - [`gridAwareAuras.endMoveInsideAura`](#gridawareaurasendmoveinsideaura)
 - [`gridAwareAuras.enterLeaveAura`](#gridawareaurasenterleaveaura)
 - [`gridAwareAuras.startMoveInsideAura`](#gridawareaurasstartmoveinsideaura)
+- [`gridAwareAuras.updateAura`](#gridawareaurasupdateaura)
+- [`gridAwareAuras.updateAuraPosition`](#gridawareaurasupdateauraposition)
+
+## gridAwareAuras.createAura
+
+This hook is called when a new aura object is created and rendered to the scene.
+
+|Name|Type|Description|
+|-|-|-|
+|`parent`|`Token`|The token that owns the aura which the other token entered/left.|
+|`aura`|[`AuraConfig`](./api.md#auraconfig)|The metadata about the aura that was re-calculated.|
+|`position`|`{ x: number; y: number; }`|The new position of the aura (aligns to top left corner of the token).|
+|`geometry`|[`{ outer: AuraGeometry \| null; inner: AuraGeometry \| null; }`](./api.md#aurageometry)|The geometry for the aura (does not include position).|
+|`options`|`Object`|Additional information about the event.|
+|`options.isInit`|`boolean`|True if this hook was called because a scene was initialised.|
+
+## gridAwareAuras.deleteAura
+
+This hook is called when an aura object is deleted from the scene.
+
+|Name|Type|Description|
+|-|-|-|
+|`parent`|`Token`|The token that owns the aura which the other token entered/left.|
+|`aura`|[`AuraConfig`](./api.md#auraconfig)|The metadata about the aura that was changed.|
+
 
 ## gridAwareAuras.endMoveInsideAura
 
@@ -96,3 +123,14 @@ This hook fires when a token starts its movemovement inside another token's aura
 |`aura`|[`AuraConfig`](./api.md#auraconfig)|The metadata about the aura that was moved within.|
 |`options`|`Object`|Additional information about the hook.|
 |`options.userId`|`string`|The ID of the user that triggered the movement.|
+
+## gridAwareAuras.updateAura
+
+This hook is called when an aura object is updated. This may include changes to the radius, styling, position, etc.
+
+|Name|Type|Description|
+|-|-|-|
+|`parent`|`Token`|The token that owns the aura which the other token entered/left.|
+|`aura`|[`AuraConfig`](./api.md#auraconfig)|The metadata about the aura that was changed.|
+|`position`|`{ x: number; y: number; }`|The position of the aura (aligns to top left corner of the token).|
+|`geometry`|[`{ outer: AuraGeometry \| null; inner: AuraGeometry \| null; }`](./api.md#aurageometry)|The geometry for the aura (does not include position).|

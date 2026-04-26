@@ -1,4 +1,4 @@
-/** @import { AuraConfig, EffectConfig, MacroConfig SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
+/** @import { AuraConfig, EffectConfig, MacroConfig, RadiusExpressionContext, SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";

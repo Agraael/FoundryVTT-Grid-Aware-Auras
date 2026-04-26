@@ -8,7 +8,7 @@
  * The AuraGeometry interface represents the shape of an aura and provides relevant methods.
  * @typedef {Object} AuraGeometry
  * @property {(token: Token, options?: AuraGeometryIsInsideOptions) => boolean} isInside Tests if a token is inside this geometry.
- * @property {() => PathCommand[] | Generator<import("../../../utils/pixi-utils.mjs").PathCommand, void, never>} getPath Draws this geometry to the given PIXI Graphics instance.
+ * @property {() => Generator<import("../../../utils/pixi-utils.mjs").PathCommand, void, never>} getPath Draws this geometry to the given PIXI Graphics instance.
  */
 
 export * from "./gridless-aura-geometry.mjs";
