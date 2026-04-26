@@ -434,7 +434,7 @@ const getEllipseHexTokenSpaces = cacheReturn(
 			return [];
 		}
 
-		const secondaryAxisOffset = Math[isVariant2 ? "ceil" : "floor"](((secondaryAxisSize - 1) / 2) * UNIT_SIDE_LENGTH * 1.5) + UNIT_SIDE_LENGTH;
+		const secondaryAxisOffset = (Math[isVariant2 ? "ceil" : "floor"]((secondaryAxisSize - 1) / 2) * UNIT_SIDE_LENGTH * 1.5) + UNIT_SIDE_LENGTH;
 
 		/** @type {{ x: number; y: number; }[]} */
 		const spaces = [];
