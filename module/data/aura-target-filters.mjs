@@ -35,6 +35,18 @@ export function listAuraTargetFilters() {
 }
 
 export function initialiseAuraTargetFilters() {
+	// Disposition relative to the source token: defers to token-factions advanced teams
+	// when the module is active so two HOSTILE-flagged tokens on the same faction read as
+	// friendly to each other. Falls back to the target's absolute disposition otherwise.
+	const dispositionRelativeTo = (target, source) => {
+		const tf = game.modules.get("token-factions")?.api;
+		if (tf && typeof tf.getDisposition === "function" && source) {
+			try { return tf.getDisposition(source, target); }
+			catch { /* fall through */ }
+		}
+		return target.document.disposition;
+	};
+
 	// Uses the previous enum values as the ID so that no config data migration is required.
 	standardFilters = [
 		{
@@ -47,19 +59,19 @@ export function initialiseAuraTargetFilters() {
 			id: "FRIENDLY",
 			name: game.i18n.localize("TOKEN.DISPOSITION.FRIENDLY"),
 			group: game.i18n.localize("TOKEN.Disposition"),
-			f: t => t.document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY
+			f: (t, s) => dispositionRelativeTo(t, s) === CONST.TOKEN_DISPOSITIONS.FRIENDLY
 		},
 		{
 			id: "NEUTRAL",
 			name: game.i18n.localize("TOKEN.DISPOSITION.NEUTRAL"),
 			group: game.i18n.localize("TOKEN.Disposition"),
-			f: t => t.document.disposition === CONST.TOKEN_DISPOSITIONS.NEUTRAL
+			f: (t, s) => dispositionRelativeTo(t, s) === CONST.TOKEN_DISPOSITIONS.NEUTRAL
 		},
 		{
 			id: "HOSTILE",
 			name: game.i18n.localize("TOKEN.DISPOSITION.HOSTILE"),
 			group: game.i18n.localize("TOKEN.Disposition"),
-			f: t => t.document.disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE
+			f: (t, s) => dispositionRelativeTo(t, s) === CONST.TOKEN_DISPOSITIONS.HOSTILE
 		},
 		...Object.keys(game.model.Actor).filter(a => a !== "base").map(a => ({
 			id: `ACTORTYPE_${a}`,
