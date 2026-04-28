@@ -1,10 +1,19 @@
 /** @import { AuraConfig } from "../../data/aura.mjs"; */
-import { ENTER_LEAVE_AURA_HOOK } from "../../consts.mjs";
+import { ENTER_LEAVE_AURA_HOOK, IGNORE_LIGHTING_SETTING, MODULE_NAME } from "../../consts.mjs";
 import { areAurasVisuallyEqual, getTokenAuras } from "../../data/aura.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { AuraManager } from "./aura-manager.mjs";
 import { Aura } from "./aura.mjs";
 import { UnifiedAuraGroup } from "./unified-aura-group.mjs";
+
+/**
+ * Returns the PIXI parent for aura graphics. Interface (unlit) when IGNORE_LIGHTING_SETTING is on,
+ * primary (lit) otherwise.
+ */
+export function getAuraParent() {
+	const ignore = game.settings.get(MODULE_NAME, IGNORE_LIGHTING_SETTING);
+	return ignore ? (canvas.gaaAuraLayer ?? canvas.primary) : canvas.primary;
+}
 
 /**
  * Layer for managing grid-aware auras on a canvas.
@@ -64,7 +73,7 @@ export class AuraLayer extends CanvasLayer {
 			}
 
 			// Remove the aura from the canvas
-			canvas.primary.removeChild(aura.graphics);
+			getAuraParent().removeChild(aura.graphics);
 			aura.destroy();
 		}
 
@@ -129,7 +138,7 @@ export class AuraLayer extends CanvasLayer {
 					this.#handleTokenEnterLeaveAura(otherToken, token, previousAura.config, false, userId, false);
 				}
 
-				canvas.primary.removeChild(previousAura.graphics);
+				getAuraParent().removeChild(previousAura.graphics);
 				previousAura.destroy();
 				this._auraManager.deregisterAura(token, previousAura.config.id);
 			}
@@ -143,7 +152,7 @@ export class AuraLayer extends CanvasLayer {
 				} else {
 					const newAura = new Aura(token);
 					newAura.update(auraConfig, { tokenDelta, force });
-					canvas.primary.addChild(newAura.graphics);
+					getAuraParent().addChild(newAura.graphics);
 					this._auraManager.registerAura(token, newAura);
 				}
 			}

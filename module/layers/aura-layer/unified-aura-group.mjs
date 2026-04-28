@@ -3,6 +3,7 @@
 import { auraDefaults } from "../../data/aura.mjs";
 import { LINE_TYPES } from "../../consts.mjs";
 import { drawComplexPath, drawDashedComplexPath } from "../../utils/pixi-utils.mjs";
+import { getAuraParent } from "./aura-layer.mjs";
 
 /**
  * @typedef {{ token: Token; aura: Aura; }} AuraEntry
@@ -55,7 +56,7 @@ export class UnifiedAuraGroup {
 		this.#name = name;
 		this.#container = new PIXI.Container();
 		this.#container.sortLayer = 689;
-		canvas.primary.addChild(this.#container);
+		getAuraParent().addChild(this.#container);
 		this.#boundTick = this.#tick.bind(this);
 	}
 
@@ -136,7 +137,7 @@ export class UnifiedAuraGroup {
 			this.#animFillContainer = null;
 			this.#animFillGfx = null;
 		}
-		canvas.primary.removeChild(this.#container);
+		getAuraParent().removeChild(this.#container);
 		this.#container.destroy({ children: true });
 	}
 

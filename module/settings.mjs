@@ -4,6 +4,7 @@ import {
 	CUSTOM_AURA_TARGET_FILTERS_SETTING,
 	ENABLE_EFFECT_AUTOMATION_SETTING,
 	ENABLE_MACRO_AUTOMATION_SETTING,
+	IGNORE_LIGHTING_SETTING,
 	MODULE_NAME,
 	PRESET_SETTING,
 	SQUARE_GRID_MODE,
@@ -41,6 +42,16 @@ export function registerSettings() {
 		default: false,
 		type: Boolean,
 		config: true
+	});
+
+	game.settings.register(MODULE_NAME, IGNORE_LIGHTING_SETTING, {
+		name: "Auras Ignore Lighting",
+		hint: "When on, auras render in the interface group, unlit by scene darkness.",
+		scope: "world",
+		default: true,
+		type: Boolean,
+		config: true,
+		requiresReload: true
 	});
 
 	game.settings.registerMenu(MODULE_NAME, PRESET_SETTING, {

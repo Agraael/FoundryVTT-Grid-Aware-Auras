@@ -13,6 +13,7 @@ export const ENABLE_MACRO_AUTOMATION_SETTING = "enableMacroAutomation";
 export const PRESET_SETTING = "presets";
 export const SQUARE_GRID_MODE_SETTING = "squareGridMode";
 export const CUSTOM_AURA_TARGET_FILTERS_SETTING = "customAuraTargetFilters";
+export const IGNORE_LIGHTING_SETTING = "ignoreLighting";
 
 // Hooks
 const HOOK_PREFIX = "gridAwareAuras";

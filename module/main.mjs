@@ -177,7 +177,16 @@ Hooks.once("init", () => {
 	setupAutomation();
 	setupSystemIntegration();
 
-	CONFIG.Canvas.layers.gaaAuraLayer = { group: "interface", layerClass: AuraLayer };
+	// Insert gaaAuraLayer BEFORE the tokens layer so it renders below tokens within the interface group.
+	const reorderedLayers = {};
+	for (const [name, config] of Object.entries(CONFIG.Canvas.layers)) {
+		if (name === "tokens")
+			reorderedLayers.gaaAuraLayer = { group: "interface", layerClass: AuraLayer };
+		reorderedLayers[name] = config;
+	}
+	if (!reorderedLayers.gaaAuraLayer)
+		reorderedLayers.gaaAuraLayer = { group: "interface", layerClass: AuraLayer };
+	CONFIG.Canvas.layers = reorderedLayers;
 
 	game.modules.get("grid-aware-auras").api = { ...api };
 });
