@@ -1,4 +1,4 @@
-/** @import { AURA_POSITIONS, EFFECT_MODES, MACRO_MODES, SEQUENCE_EASINGS, SEQUENCE_TRIGGERS, SEQUENCE_POSITIONS, THT_RULER_ON_DRAG_MODES } from "../consts.mjs" */
+/** @import { AURA_POSITIONS, EFFECT_MODES, MACRO_MODES, EASING_FUNCTIONS, SEQUENCE_TRIGGERS, SEQUENCE_POSITIONS, THT_RULER_ON_DRAG_MODES } from "../consts.mjs" */
 import { DOCUMENT_AURAS_FLAG, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { createRadiusExtensionProxy, hasRadiusExtensions } from "./aura-radius-expression-extensions.mjs";
 
@@ -16,11 +16,13 @@ export const latestAuraConfigVersion = 1;
  * @property {LINE_TYPES} lineType
  * @property {number} lineWidth
  * @property {string} lineColor
+ * @property {ColorAnimation | null} lineColorAnimation
  * @property {number} lineOpacity
  * @property {number} lineDashSize
  * @property {number} lineGapSize
  * @property {number} fillType
  * @property {string} fillColor
+ * @property {ColorAnimation | null} fillColorAnimation
  * @property {number} fillOpacity
  * @property {string} fillTexture
  * @property {{ x: number; y: number; }} fillTextureOffset
@@ -70,19 +72,25 @@ export const latestAuraConfigVersion = 1;
  * @property {number} delay
  * @property {number} opacity
  * @property {number} fadeInDuration
- * @property {SEQUENCE_EASINGS} fadeInEasing
+ * @property {EASING_FUNCTIONS} fadeInEasing
  * @property {number} fadeOutDuration
- * @property {SEQUENCE_EASINGS} fadeOutEasing
+ * @property {EASING_FUNCTIONS} fadeOutEasing
  * @property {number} scale
  * @property {boolean} scaleToObject
  * @property {number} scaleInScale
  * @property {number} scaleInDuration
- * @property {SEQUENCE_EASINGS} scaleInEasing
+ * @property {EASING_FUNCTIONS} scaleInEasing
  * @property {number} scaleOutScale
  * @property {number} scaleOutDuration
- * @property {SEQUENCE_EASINGS} scaleOutEasing
+ * @property {EASING_FUNCTIONS} scaleOutEasing
  * @property {number} playbackRate
  * @property {boolean} belowTokens
+ */
+/**
+ * @typedef {Object} ColorAnimation
+ * @property {{ color: number; alpha: number; position: number; }[]} keyframes
+ * @property {number} duration
+ * @property {EASING_FUNCTIONS} easingFunc
  */
 
 /**
@@ -221,11 +229,13 @@ export const auraDefaults = () => ({
 	lineType: LINE_TYPES.SOLID,
 	lineWidth: 4,
 	lineColor: "#FF0000",
+	lineColorAnimation: null,
 	lineOpacity: 0.8,
 	lineDashSize: 15,
 	lineGapSize: 10,
 	fillType: CONST.DRAWING_FILL_TYPES.SOLID,
 	fillColor: "#FF0000",
+	fillColorAnimation: null,
 	fillOpacity: 0.1,
 	fillTexture: "",
 	fillTextureOffset: { x: 0, y: 0 },
@@ -239,6 +249,28 @@ export const auraDefaults = () => ({
 		rulerOnDrag: "NONE",
 		targetTokens: ""
 	}
+});
+
+/** @type {() => ColorAnimation} */
+export const lineColorAnimationDefaults = () => ({
+	duration: 2500,
+	easingFunc: "linear",
+	keyframes: [
+		{ color: 0xFF0000, alpha: 0.8, position: 0 },
+		{ color: 0x0000FF, alpha: 0.8, position: 0.5 },
+		{ color: 0xFF0000, alpha: 0.8, position: 1 }
+	]
+});
+
+/** @type {() => ColorAnimation} */
+export const fillColoAnimationDefaults = () => ({
+	duration: 2500,
+	easingFunc: "linear",
+	keyframes: [
+		{ color: 0xFF0000, alpha: 0.1, position: 0 },
+		{ color: 0x0000FF, alpha: 0.1, position: 0.5 },
+		{ color: 0xFF0000, alpha: 0.1, position: 1 }
+	]
 });
 
 /** @type {() => EffectConfig} */

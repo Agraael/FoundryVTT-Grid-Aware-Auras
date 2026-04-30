@@ -502,6 +502,262 @@ gaa-data-path-autocomplete {
 	overflow-y: auto;
 }
 
+/* ------------ */
+/* Color picker */
+/* ------------ */
+gaa-inline-color-picker {
+	display: flex;
+	gap: 1rem;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-interactive {
+	flex: 1 0 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-color-space {
+	--current-color-hue: 0;
+	position: relative;
+	flex: 1 0 0 !important;
+	background:
+		/* lightness: */
+		linear-gradient(to bottom, rgb(0 0 0 / 0%), #000000),
+		/* saturation: */
+		linear-gradient(to right, #FFFFFF, hsl(var(--current-color-hue) 100% 50%));
+	cursor: pointer;
+	border-radius: 2px;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-color-space:focus {
+	outline: none;
+	box-shadow: 0 0 5px var(--color-shadow-primary);
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-color-space-thumb {
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform: translate(-50%, -50%);
+	width: 12px;
+	height: 12px;
+	background: rgba(11, 10, 19, 0.9);
+	border: 1px solid var(--color-warm-1);
+	border-radius: 2px;
+	pointer-events: none;
+}
+
+/* Do not merge the webkit and moz rulesets, since they are considered invalid by the other browser which then discards
+the whole ruleset. */
+gaa-inline-color-picker input[type="range"]::-webkit-slider-runnable-track {
+	height: 14px !important;
+}
+gaa-inline-color-picker input[type="range"]::-moz-range-track {
+	height: 14px !important;
+}
+
+gaa-inline-color-picker input[type="range"]::-webkit-slider-thumb {
+	height: 20px !important;
+}
+gaa-inline-color-picker input[type="range"]::-moz-range-thumb {
+	height: 20px !important;
+}
+
+gaa-inline-color-picker input[type="range"].gaa-inline-color-picker-hue-range {
+	--range-track-color: linear-gradient(to right, #FF0000, #FFFF00, #00FF00, #00FFFF, #0000FF, #FF00FF, #FF0000);
+}
+
+gaa-inline-color-picker input[type="range"].gaa-inline-color-picker-alpha-range {
+	--current-color-rgb: 255 0 0;
+	--range-track-color:
+		linear-gradient(to right, rgb(var(--current-color-rgb) / 0%), rgb(var(--current-color-rgb))),
+		url(/modules/grid-aware-auras/styles/checkerboard.svg) 0 0 / 8px 8px;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-inputs {
+	flex: 0 0 116px;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-inputs > div {
+	display: grid;
+	align-items: center;
+	grid-auto-flow: column;
+	grid-template-columns: min-content;
+	grid-auto-columns: 1fr;
+	gap: 0.5rem;
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-inputs > div > label {
+	font-weight: bold;
+	color: var(--color-form-label);
+}
+
+gaa-inline-color-picker .gaa-inline-color-picker-inputs > div:hover > label {
+	color: var(--color-form-label-hover);
+}
+
+/* ---------------------- */
+/* Color animation edtior */
+/* ---------------------- */
+.gaa-color-animation-editor-preview-bar {
+	height: 18px;
+	background:
+		linear-gradient(var(--current-color)), /* cannot use solid color, else it stops url working, but can use linear-gradient with one stop */
+		url(/modules/grid-aware-auras/styles/checkerboard.svg) 0 0 / 8px 8px;
+	border: 1px solid currentColor;
+	border-radius: 2px;
+}
+
+.gaa-color-animation-editor-dropdown {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.gaa-color-animation-editor-dropdown .hint {
+	font-size: var(--font-size-14);
+    color: var(--color-form-hint);
+	margin: 0 0 -0.5rem;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview {
+	position: relative;
+	height: 28px;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-track {
+	position: absolute;
+	top: 50%;
+	height: 18px;
+	width: 100%;
+	transform: translateY(-50%);
+	background:
+		linear-gradient(to right, var(--gradient-stops)),
+		url(/modules/grid-aware-auras/styles/checkerboard.svg) 0 0 / 8px 8px;
+	border-radius: 2px;
+	cursor: copy;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-tracker {
+	position: absolute;
+	top: 5px;
+	bottom: 5px;
+	width: 5px;
+	background: #ff0000;
+	border: 1px solid rgba(0 0 0 / 80%);
+	border-top: none;
+	border-bottom: none;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb {
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 12px;
+	height: 28px;
+	background-color: rgb(var(--current-color-rgb));
+	border: 1px solid var(--color-warm-1);
+	border-radius: 2px;
+	cursor: col-resize;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb.active {
+	outline: 3px solid #9b8dff;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb-properties {
+	display: flex;
+	position: absolute;
+	top: 0px;
+	border-radius: 2px;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb-properties-track {
+	position: relative;
+	height: 32px;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb-properties > input {
+	flex: 0 0 40px;
+	margin-right: 0.25rem;
+}
+
+.gaa-color-animation-editor-dropdown .gaa-color-animation-editor-preview-thumb-properties > span {
+	align-self: center;
+}
+
+.gaa-color-animation-editor-ease-button {
+	flex: 0 0 30px !important;
+	height: 30px;
+	padding: 0 !important;
+}
+
+.gaa-color-animation-editor-ease-button > svg {
+	width: 20px;
+	height: 20px;
+	stroke: currentColor;
+	stroke-width: 10px;
+	fill: none;
+}
+
+/* ---------------- */
+/* Generic Dropdown */
+/* ---------------- */
+.gaa-dropdown-button {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	gap: 8px;
+
+	/* Copied from Foundry's select: */
+	--input-background-color: var(--color-cool-4);
+    --input-border-color: transparent;
+    --input-text-color: var(--color-light-3);
+    --input-placeholder-color: var(--color-light-4);
+    --input-focus-outline-color: var(--color-cool-3);
+
+	width: 100%;
+    height: var(--input-height);
+    line-height: var(--input-height);
+    padding: 0 0.5rem;
+    background: var(--input-background-color);
+    border: 1px solid var(--input-border-color);
+    border-radius: 4px;
+    outline: 1px solid transparent;
+    color: var(--input-text-color);
+    user-select: text;
+    font-size: var(--font-size-14);
+    transition: outline-color 0.5s;
+}
+
+.themed.theme-light .gaa-dropdown-button {
+	--input-background-color: rgba(0, 0, 0, 0.1);
+    --input-border-color: var(--color-dark-6);
+    --input-text-color: var(--color-dark-2);
+    --input-placeholder-color: var(--color-dark-3);
+    --input-focus-outline-color: var(--color-warm-2);
+}
+
+.gaa-dropdown-button > * {
+	flex: 1 1 0;
+}
+
+.gaa-dropdown-button > i.fas.fa-chevron-down {
+	flex: 0 0 min-content;
+}
+
+.gaa-dropdown-container {
+	position: absolute;
+	z-index: calc(var(--z-index-tooltip) - 1);
+	width: max-content;
+	padding: 1rem;
+	box-shadow: 0 3px 6px rgb(0 0 0 / 45%);
+}
+
 /* ------- */
 /* Utility */
 /* ------- */
@@ -528,4 +784,15 @@ gaa-data-path-autocomplete {
 
 .cursor-help {
 	cursor: help;
+}
+
+.m-0 {
+	margin: 0 !important;
+}
+
+/* Calling it .gaa-btn-active as there's a high chance of a collision with just .active */
+button.gaa-btn-active {
+	background: var(--button-hover-background-color);
+	color: var(--button-hover-text-color);
+	box-shadow: 0 0 5px var(--color-shadow-primary);
 }

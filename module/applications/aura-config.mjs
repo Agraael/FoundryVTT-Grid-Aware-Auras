@@ -1,15 +1,16 @@
 /** @import { AuraConfig, EffectConfig, MacroConfig, RadiusExpressionContext, SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
+import "../components/color-animation-editor.mjs";
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
 import {
 	AURA_POSITIONS,
 	AURA_VISIBILITY_MODES,
+	EASING_FUNCTIONS,
 	EFFECT_MODES,
 	ENABLE_EFFECT_AUTOMATION_SETTING,
 	ENABLE_MACRO_AUTOMATION_SETTING,
 	LINE_TYPES, MACRO_MODES, MODULE_NAME,
-	SEQUENCE_EASINGS,
 	SEQUENCE_POSITIONS,
 	SEQUENCE_TRIGGERS,
 	THT_RULER_ON_DRAG_MODES
@@ -19,6 +20,8 @@ import {
 	auraVisibilityModeMatrices,
 	calculateAuraRadius,
 	effectConfigDefaults,
+	fillColoAnimationDefaults,
+	lineColorAnimationDefaults,
 	macroConfigDefaults,
 	sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
@@ -271,19 +274,46 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.lineColorAnimation })}>
 					<label>${l("DRAWING.StrokeColor")}</label>
 					<div class="form-fields">
 						<color-picker name="lineColor" .value=${this.#aura.lineColor} ?disabled=${this.#disabled}></color-picker>
+						<button
+							type="button"
+							data-tooltip="Enable animation"
+							@click=${() => this.#setAuraProperty("lineColorAnimation", lineColorAnimationDefaults())}
+						>
+							<i class="fas fa-sparkles m-0"></i>
+						</button>
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.lineColorAnimation })}>
 					<label>${l("DRAWING.LineOpacity")}</label>
 					<div class="form-fields">
 						<range-picker name="lineOpacity" .value=${this.#aura.lineOpacity} min="0" max="1" step="0.1" ?disabled=${this.#disabled}></range-picker>
 					</div>
 				</div>
+
+				${when(this.#aura.lineColorAnimation, () => html`
+					<div class="form-group">
+						<label>${l("DRAWING.StrokeColor")}</label>
+						<div class="form-fields">
+							<gaa-color-animation-editor
+								name="lineColorAnimation"
+								.value=${this.#aura.lineColorAnimation}
+							></gaa-color-animation-editor>
+							<button
+								type="button"
+								class="gaa-btn-active"
+								data-tooltip="Disable animation"
+								@click=${() => this.#setAuraProperty("lineColorAnimation", null)}
+							>
+								<i class="fas fa-sparkles m-0"></i>
+							</button>
+						</div>
+					</div>
+				`)}
 
 				<div class="form-group">
 					<label>Dash Config <span class="units">(px)</span></label>
@@ -313,19 +343,46 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillColorAnimation })}>
 					<label>${l("DRAWING.FillColor")}</label>
 					<div class="form-fields">
 						<color-picker name="fillColor" .value=${this.#aura.fillColor} ?disabled=${this.#disabled}></color-picker>
+						<button
+							type="button"
+							data-tooltip="Enable animation"
+							@click=${() => this.#setAuraProperty("fillColorAnimation", fillColoAnimationDefaults())}
+						>
+							<i class="fas fa-sparkles m-0"></i>
+						</button>
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillColorAnimation })}>
 					<label>${l("DRAWING.FillOpacity")}</label>
 					<div class="form-fields">
 						<range-picker name="fillOpacity" .value=${this.#aura.fillOpacity} min="0" max="1" step="0.1" ?disabled=${this.#disabled}></range-picker>
 					</div>
 				</div>
+
+				${when(this.#aura.fillColorAnimation, () => html`
+					<div class="form-group">
+						<label>${l("DRAWING.FillColor")}</label>
+						<div class="form-fields">
+							<gaa-color-animation-editor
+								name="fillColorAnimation"
+								.value=${this.#aura.fillColorAnimation}
+							></gaa-color-animation-editor>
+							<button
+								type="button"
+								class="gaa-btn-active"
+								data-tooltip="Disable animation"
+								@click=${() => this.#setAuraProperty("fillColorAnimation", null)}
+							>
+								<i class="fas fa-sparkles m-0"></i>
+							</button>
+						</div>
+					</div>
+				`)}
 
 				<div class="form-group">
 					<label>${l("DRAWING.FillTexture")}</label>
@@ -827,7 +884,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="fadeInDuration" value=${effect.fadeInDuration} min="0" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="fadeInEasing" ?disabled=${this.#disabled}>
-								${selectOptions(SEQUENCE_EASINGS, { selected: effect.fadeInEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeInEasing })}
 							</select>
 						</div>
 					</div>
@@ -838,7 +895,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="fadeOutDuration" value=${effect.fadeOutDuration} min="0" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="fadeOutEasing" ?disabled=${this.#disabled}>
-								${selectOptions(SEQUENCE_EASINGS, { selected: effect.fadeOutEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeOutEasing })}
 							</select>
 						</div>
 					</div>
@@ -868,7 +925,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="scaleInDuration" value=${effect.scaleInDuration} min="0" step="0.01" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="scaleInEasing" style="flex: 2" ?disabled=${this.#disabled}>
-								${selectOptions(SEQUENCE_EASINGS, { selected: effect.scaleInEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleInEasing })}
 							</select>
 						</div>
 					</div>
@@ -881,7 +938,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="scaleOutDuration" value=${effect.scaleOutDuration} min="0" step="0.01" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="scaleOutEasing" style="flex: 2" ?disabled=${this.#disabled}>
-								${selectOptions(SEQUENCE_EASINGS, { selected: effect.scaleOutEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleOutEasing })}
 							</select>
 						</div>
 					</div>
@@ -952,6 +1009,16 @@ export class AuraConfigApplication extends ApplicationV2 {
 		foundry.utils.setProperty(this.#aura, name, value);
 		this.#auraUpdated();
 	};
+
+	/**
+	 * @template {keyof AuraConfig} T
+	 * @param {T} name
+	 * @param {AuraConfig[T]} value
+	 */
+	#setAuraProperty(name, value) {
+		foundry.utils.setProperty(this.#aura, name, value);
+		this.#auraUpdated();
+	}
 
 	/** @type {(e: Event) => void} */
 	#setVisibilityMode = e => {

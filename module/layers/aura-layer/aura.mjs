@@ -2,6 +2,7 @@
 /** @import { AuraGeometry } from "./geometry/index.mjs" */
 import { LINE_TYPES, MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
+import { createTintAlphaColorAnimationTicker } from "../../utils/animation-utils.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { drawComplexPath, drawDashedComplexPath } from "../../utils/pixi-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
@@ -25,8 +26,20 @@ export class Aura {
 
 	#isVisible = false;
 
-	/** @type {PIXI.Graphics} */
-	#graphics;
+	/** @type {PIXI.Container} */
+	#graphicsContainer;
+
+	/** @type {PIXI.Graphics | undefined} */
+	#lineGraphics;
+
+	/** @type {(() => void) | undefined} */
+	#lineGraphicsTickFn;
+
+	/** @type {PIXI.Graphics | undefined} */
+	#fillGraphics;
+
+	/** @type {(() => void) | undefined} */
+	#fillGraphicsTickFn;
 
 	/**
 	 * The geometry of the aura, relative to the token position.
@@ -45,12 +58,12 @@ export class Aura {
 	/** @param {Token} token */
 	constructor(token) {
 		this.#token = token;
-		this.#graphics = new PIXI.Graphics();
-		this.#graphics.sortLayer = 690; // Render just below tokens
+		this.#graphicsContainer = new PIXI.Container();
+		this.#graphicsContainer.sortLayer = 690; // Render just below tokens
 	}
 
 	get graphics() {
-		return this.#graphics;
+		return this.#graphicsContainer;
 	}
 
 	get config() {
@@ -108,13 +121,13 @@ export class Aura {
 	 */
 	updatePosition({ tokenDelta } = {}) {
 		const { x: previousX, y: previousY } = this.graphics;
-		const previousElevation = this.#graphics.elevation;
+		const previousElevation = this.#graphicsContainer.elevation;
 
-		Object.assign(this.#graphics, this.#getOffset(tokenDelta, this.#token));
-		this.#graphics.elevation = tokenDelta?.elevation ?? this.#token.document.elevation;
+		Object.assign(this.#graphicsContainer, this.#getOffset(tokenDelta, this.#token));
+		this.#graphicsContainer.elevation = tokenDelta?.elevation ?? this.#token.document.elevation;
 
-		const hasChanged = this.#graphics.x !== previousX
-			|| this.#graphics.y !== previousY
+		const hasChanged = this.#graphicsContainer.x !== previousX
+			|| this.#graphicsContainer.y !== previousY
 			|| this.graphics.elevation !== previousElevation;
 
 		return hasChanged;
@@ -125,7 +138,7 @@ export class Aura {
 		// Transition opacity
 		const wasVisible = this.#isVisible;
 		this.#isVisible = this.#getVisibility();
-		this.#graphics.alpha = this.#isVisible ? 1 : 0;
+		this.#graphicsContainer.alpha = this.#isVisible ? 1 : 0;
 		return this.#isVisible !== wasVisible;
 	}
 
@@ -152,7 +165,8 @@ export class Aura {
 	}
 
 	destroy() {
-		this.#graphics.destroy();
+		this.#clearGraphics();
+		this.#graphicsContainer.destroy();
 	}
 
 	/**
@@ -178,7 +192,7 @@ export class Aura {
 
 		// Auras with negative radii are not rendered, neither are those where the innerRadius >= radius.
 		if (typeof radius !== "number" || radius < 0 || (typeof innerRadius === "number" && innerRadius >= radius)) {
-			this.#graphics.clear();
+			this.#clearGraphics();
 			this.#geometry = null;
 			this.#innerGeometry = null;
 			return;
@@ -194,51 +208,18 @@ export class Aura {
 			: null;
 
 		if (!this.#geometry) {
-			this.#graphics.clear();
+			this.#clearGraphics();
 			return;
 		}
 
-		// Load the texture BEFORE clearing, otherwise there's a noticable flash every time something is chaned.
+		// Load the texture BEFORE clearing, otherwise there's a noticable flash every time something is changed.
 		const texture = auraConfig.fillType === CONST.DRAWING_FILL_TYPES.PATTERN
 			? await loadTexture(auraConfig.fillTexture)
 			: null;
 
-		this.#graphics.clear();
-
-		this.#configureFillStyle({ ...auraConfig, fillTexture: texture });
-
-		// Becasue of the way dashed paths are implemented and because of inner radius (holes), it is easier to draw the
-		// background without the borders, the draw the outer/inner borders afterwards.
-		// 1. Fill
-		this.#configureLineStyle({ lineType: LINE_TYPES.NONE });
-		drawComplexPath(this.#graphics, this.#geometry.getPath());
-		if (this.#innerGeometry) {
-			this.#graphics.beginHole();
-			drawComplexPath(this.#graphics, this.#innerGeometry.getPath());
-			this.#graphics.endHole();
-		}
-		this.#graphics.endFill();
-
-		// 2. Borders
-		this.#configureLineStyle(auraConfig);
-		switch (auraConfig.lineType) {
-			case LINE_TYPES.SOLID: {
-				drawComplexPath(this.#graphics, this.#geometry.getPath());
-				if (this.#innerGeometry)
-					drawComplexPath(this.#graphics, this.#innerGeometry.getPath());
-				break;
-			}
-
-			case LINE_TYPES.DASHED: {
-				const dashConfig = { dashSize: auraConfig.lineDashSize, gapSize: auraConfig.lineGapSize };
-				drawDashedComplexPath(this.#graphics, this.#geometry.getPath(), dashConfig);
-				if (this.#innerGeometry)
-					drawDashedComplexPath(this.#graphics, this.#innerGeometry.getPath(), dashConfig);
-				break;
-			}
-		}
-
-		return;
+		this.#clearGraphics();
+		this.#redrawLine(auraConfig);
+		this.#redrawFill(auraConfig, texture);
 
 		/**
 		 * Creates a geometry of the specified radius for the current grid type and scoped token size/shape.
@@ -268,6 +249,101 @@ export class Aura {
 						canvas.grid.size
 					);
 			}
+		}
+	}
+
+	/**
+	 * @param {AuraConfig} auraConfig
+	 */
+	#redrawLine(auraConfig) {
+		if (auraConfig.lineType === LINE_TYPES.NONE) return;
+
+		this.#lineGraphics ??= this.#graphicsContainer.addChild(new PIXI.Graphics());
+		this.#lineGraphics.zIndex = 1;
+
+		this.#lineGraphics.lineStyle({
+			color: 0xFFFFFF,
+			width: auraConfig.lineWidth,
+			alignment: 0.5
+		});
+
+		switch (auraConfig.lineType) {
+			case LINE_TYPES.SOLID: {
+				drawComplexPath(this.#lineGraphics, this.#geometry.getPath());
+				if (this.#innerGeometry)
+					drawComplexPath(this.#lineGraphics, this.#innerGeometry.getPath());
+				break;
+			}
+
+			case LINE_TYPES.DASHED: {
+				const dashConfig = { dashSize: auraConfig.lineDashSize, gapSize: auraConfig.lineGapSize };
+				drawDashedComplexPath(this.#lineGraphics, this.#geometry.getPath(), dashConfig);
+				if (this.#innerGeometry)
+					drawDashedComplexPath(this.#lineGraphics, this.#innerGeometry.getPath(), dashConfig);
+				break;
+			}
+		}
+
+		this.#lineGraphics.tint = Color.from(auraConfig.lineColor);
+		this.#lineGraphics.alpha = auraConfig.lineOpacity;
+
+		if (auraConfig.lineColorAnimation) {
+			this.#lineGraphicsTickFn = createTintAlphaColorAnimationTicker(this.#lineGraphics, auraConfig.lineColorAnimation);
+			canvas.app.ticker.add(this.#lineGraphicsTickFn);
+		}
+	}
+
+	#clearGraphics() {
+		this.#lineGraphics?.clear();
+		if (this.#lineGraphicsTickFn) {
+			canvas.app.ticker.remove(this.#lineGraphicsTickFn);
+			this.#lineGraphicsTickFn = undefined;
+		}
+
+		this.#fillGraphics?.clear();
+		if (this.#fillGraphicsTickFn) {
+			canvas.app.ticker.remove(this.#fillGraphicsTickFn);
+			this.#fillGraphicsTickFn = undefined;
+		}
+	}
+
+	/**
+	 * @param {AuraConfig} auraConfig
+	 * @param {PIXI.Texture | null} texture
+	 */
+	#redrawFill(auraConfig, texture) {
+		if (auraConfig.fillType === CONST.DRAWING_FILL_TYPES.NONE) return;
+
+		this.#fillGraphics ??= this.#graphicsContainer.addChild(new PIXI.Graphics());
+		this.#fillGraphics.zIndex = 0;
+
+		if (auraConfig.fillType === CONST.DRAWING_FILL_TYPES.PATTERN && texture) {
+			const { x: xOffset, y: yOffset } = auraConfig.fillTextureOffset;
+			const { x: xScale, y: yScale } = auraConfig.fillTextureScale;
+			this.#fillGraphics?.beginTextureFill({
+				texture,
+				color: 0xFFFFFF,
+				alpha: 1,
+				matrix: new PIXI.Matrix(xScale / 100, 0, 0, yScale / 100, xOffset, yOffset)
+			});
+		} else {
+			this.#fillGraphics?.beginFill(0xFFFFFF, 1);
+		}
+
+		drawComplexPath(this.#fillGraphics, this.#geometry.getPath());
+		if (this.#innerGeometry) {
+			this.#fillGraphics.beginHole();
+			drawComplexPath(this.#fillGraphics, this.#innerGeometry.getPath());
+			this.#fillGraphics.endHole();
+		}
+		this.#fillGraphics.endFill();
+
+		this.#fillGraphics.tint = Color.from(auraConfig.fillColor);
+		this.#fillGraphics.alpha = auraConfig.fillOpacity;
+
+		if (auraConfig.fillColorAnimation) {
+			this.#fillGraphicsTickFn = createTintAlphaColorAnimationTicker(this.#fillGraphics, auraConfig.fillColorAnimation);
+			canvas.app.ticker.add(this.#fillGraphicsTickFn);
 		}
 	}
 
@@ -366,42 +442,5 @@ export class Aura {
 		}
 
 		return !hasRelevantNonDefaultState && visibility.default;
-	}
-
-	/**
-	 * Configures the line style for this graphics instance based on the given values.
-	 */
-	#configureLineStyle({
-		lineType = LINE_TYPES.NONE, lineWidth = 0, lineColor = "#000000", lineOpacity = 0
-	} = {}) {
-		this.#graphics.lineStyle({
-			color: Color.from(lineColor),
-			alpha: lineOpacity,
-			width: lineType === LINE_TYPES.NONE ? 0 : lineWidth,
-			alignment: 0.5
-		});
-	}
-
-	/**
-	 * Configures the fill style for this graphics instance based on the given values.
-	 */
-	#configureFillStyle({
-		fillType = CONST.DRAWING_FILL_TYPES.NONE, fillColor = "#000000", fillOpacity = 0, fillTexture = undefined, fillTextureOffset = { x: 0, y: 0 }, fillTextureScale = { x: 0, y: 0 }
-	} = {}) {
-		const color = Color.from(fillColor ?? "#000000");
-		if (fillType === CONST.DRAWING_FILL_TYPES.SOLID) {
-			this.#graphics.beginFill(fillColor, fillOpacity);
-		} else if (fillType === CONST.DRAWING_FILL_TYPES.PATTERN && fillTexture) {
-			const { x: xOffset, y: yOffset } = fillTextureOffset;
-			const { x: xScale, y: yScale } = fillTextureScale;
-			this.#graphics.beginTextureFill({
-				texture: fillTexture,
-				color,
-				alpha: fillOpacity,
-				matrix: new PIXI.Matrix(xScale / 100, 0, 0, yScale / 100, xOffset, yOffset)
-			});
-		} else { // NONE
-			this.#graphics.beginFill(0x000000, 0);
-		}
 	}
 }

@@ -119,13 +119,12 @@ export const SEQUENCE_POSITIONS = /** @type {const} */ ({
 	TARGET_TO_OWNER: "GRIDAWAREAURAS.SequencePositionFromTargetToOwner"
 });
 
-// Naming convention matches the Sequencer parameters
-/** @enum {keyof typeof SEQUENCE_EASINGS} */
-export const SEQUENCE_EASINGS = /** @type {const} */ ({
-	linear: "GRIDAWAREAURAS.SequenceEasingLinear",
-	easeInCubic: "GRIDAWAREAURAS.SequenceEasingEaseIn",
-	easeOutCubic: "GRIDAWAREAURAS.SequenceEasingEaseOut",
-	easeInOutCubic: "GRIDAWAREAURAS.SequenceEasingEaseInOut"
+/** @enum {keyof typeof EASING_FUNCTIONS} */
+export const EASING_FUNCTIONS = /** @type {const} */ ({
+	linear: "GRIDAWAREAURAS.EasingLinear",
+	easeInCubic: "GRIDAWAREAURAS.EasingEaseIn",
+	easeOutCubic: "GRIDAWAREAURAS.EasingEaseOut",
+	easeInOutCubic: "GRIDAWAREAURAS.EasingEaseInOut"
 });
 
 /** @enum {keyof typeof THT_RULER_ON_DRAG_MODES} */
