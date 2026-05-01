@@ -1,4 +1,5 @@
-import { html, LitElement, when } from "../lib/lit-all.min.js";
+import { html, LitElement } from "lit";
+import { when } from "lit/directives/when.js";
 
 /**
  * @typedef {Object} ContextMenuItem

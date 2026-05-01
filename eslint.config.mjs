@@ -5,8 +5,7 @@ import globals from "globals";
 
 export default defineConfig([
 	{
-		files: ["./module/**/*.{js,mjs,cjs}"],
-		ignores: ["./module/lib/**/*.*"],
+		files: ["./src/**/*.{js,mjs,cjs}"],
 		plugins: {
 			js,
 			"@stylistic/js": stylisticJs

@@ -1,5 +1,9 @@
 /** @import { ColorAnimation } from "../data/aura.mjs"; */
-import { AsyncDirective, classMap, createRef, directive, html, ref, styleMap } from "../lib/lit-all.min.js";
+import { html } from "lit";
+import { AsyncDirective, directive } from "lit/async-directive.js";
+import { classMap } from "lit/directives/class-map.js";
+import { createRef, ref } from "lit/directives/ref.js";
+import { styleMap } from "lit/directives/style-map.js";
 import { easingFunctions, getColorAnimationValue } from "../utils/animation-utils.mjs";
 import { extractRgb, premultiplyKeyframes, unpremultiply } from "../utils/color-utils.mjs";
 import { DropdownElement } from "./dropdown.mjs";

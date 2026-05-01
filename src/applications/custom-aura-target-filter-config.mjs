@@ -1,6 +1,8 @@
 /** @import { AuraTargetFilter } from "../data/aura-target-filters.mjs" */
+import { html, render } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { when } from "lit/directives/when.js";
 import { CUSTOM_AURA_TARGET_FILTERS_SETTING, MODULE_NAME } from "../consts.mjs";
-import { classMap, html, render, when } from "../lib/lit-all.min.js";
 
 const { ApplicationV2 } = foundry.applications.api;
 

@@ -1,4 +1,6 @@
-import { classMap, html, LitElement, render as litRender, when } from "../lib/lit-all.min.js";
+import { html, LitElement, render as litRender } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { when } from "lit/directives/when.js";
 
 export const elementName = "gaa-multi-select";
 

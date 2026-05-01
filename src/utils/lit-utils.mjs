@@ -1,4 +1,4 @@
-import { html } from "../lib/lit-all.min.js";
+import { html } from "lit";
 
 const noGroup = Symbol("noGroup");
 

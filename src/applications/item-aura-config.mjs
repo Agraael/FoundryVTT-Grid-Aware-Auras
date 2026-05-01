@@ -1,9 +1,11 @@
 /** @import { AuraTable } from "../components/aura-table.mjs" */
 /** @import { AuraConfig } from "../data/aura.mjs" */
+import { html, render } from "lit";
+import { createRef, ref } from "lit/directives/ref.js";
+import { when } from "lit/directives/when.js";
 import "../components/aura-table.mjs";
 import { DOCUMENT_AURAS_FLAG, MODULE_NAME } from "../consts.mjs";
 import { createRadiusExpressionContext, getDocumentOwnAuras } from "../data/aura.mjs";
-import { createRef, html, ref, render, when } from "../lib/lit-all.min.js";
 
 const { ApplicationV2 } = foundry.applications.api;
 

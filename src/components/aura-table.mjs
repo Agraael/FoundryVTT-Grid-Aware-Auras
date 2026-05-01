@@ -1,10 +1,11 @@
 /** @import { AuraConfig, importAuraJson, RadiusExpressionContext } from "../data/aura.mjs" */
+import { html, LitElement } from "lit";
+import { when } from "lit/directives/when.js";
 import { AuraConfigApplication } from "../applications/aura-config.mjs";
 import { PresetManagerApplication } from "../applications/preset-manager.mjs";
 import { ENABLE_EFFECT_AUTOMATION_SETTING, ENABLE_MACRO_AUTOMATION_SETTING, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { calculateAuraRadius, createAura, exportAuraJson, getAura } from "../data/aura.mjs";
 import { getPresetsRaw, saveAuraAsNewPreset } from "../data/preset.mjs";
-import { html, LitElement, when } from "../lib/lit-all.min.js";
 import { ContextMenu } from "./context-menu.mjs";
 
 export const elementName = "gaa-aura-table";

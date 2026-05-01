@@ -1,11 +1,12 @@
 /** @import { AuraConfig } from "../data/aura.mjs"; */
 /** @import { Preset } from "../data/preset.mjs" */
+import { html, render } from "lit";
+import { when } from "lit/directives/when.js";
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/multi-select.mjs";
 import { LINE_TYPES } from "../consts.mjs";
 import { createAura, exportAuraJson, getAura, importAuraJson } from "../data/aura.mjs";
 import { getPresets, savePresets } from "../data/preset.mjs";
-import { html, render, when } from "../lib/lit-all.min.js";
 import { AuraConfigApplication } from "./aura-config.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;

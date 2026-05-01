@@ -1,4 +1,8 @@
 /** @import { AuraConfig, EffectConfig, MacroConfig, RadiusExpressionContext, SequencerEffectConfig, VisibilityConfig } from "../data/aura.mjs"; */
+import { html, nothing, render } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { createRef } from "lit/directives/ref.js";
+import { when } from "lit/directives/when.js";
 import "../components/color-animation-editor.mjs";
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
@@ -25,7 +29,6 @@ import {
 	macroConfigDefaults,
 	sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
-import { classMap, createRef, html, nothing, ref, render, when } from "../lib/lit-all.min.js";
 import { selectOptions } from "../utils/lit-utils.mjs";
 import { isSequencerActive, isTerrainHeightToolsActive, partialEqual } from "../utils/misc-utils.mjs";
 

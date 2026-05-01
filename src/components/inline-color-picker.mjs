@@ -1,5 +1,7 @@
 /** @import { RGBA, HSVA } from "../utils/color-utils.mjs"; */
-import { createRef, html, LitElement, noChange, ref, styleMap } from "../lib/lit-all.min.js";
+import { html, LitElement, noChange } from "lit";
+import { createRef, ref } from "lit/directives/ref.js";
+import { styleMap } from "lit/directives/style-map.js";
 import { hsvaToRgba, parseHexString, rgbaToHsva, toHexString } from "../utils/color-utils.mjs";
 
 export const elementName = "gaa-inline-color-picker";

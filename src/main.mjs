@@ -7,8 +7,11 @@ import { initialiseAuraTargetFilters } from "./data/aura-target-filters.mjs";
 import { getPresets } from "./data/preset.mjs";
 import { AuraLayer } from "./layers/aura-layer/aura-layer.mjs";
 import { registerSettings } from "./settings.mjs";
+import "./style/main.css";
 import { setupSystemIntegration } from "./system-integrations/index.mjs";
 import { pickProperties, toggleEffect } from "./utils/misc-utils.mjs";
+
+console.log(css.gridAwareAurasAuraConfig);
 
 // Token properties (flattened) to trigger an aura check on
 const watchedTokenProperties = [

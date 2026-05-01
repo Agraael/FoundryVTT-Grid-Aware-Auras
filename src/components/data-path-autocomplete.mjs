@@ -1,4 +1,6 @@
-import { classMap, createRef, html, LitElement, render as litRender, ref } from "../lib/lit-all.min.js";
+import { html, LitElement, render as litRender } from "lit";
+import { classMap } from "lit/directives/class-map.js";
+import { createRef, ref } from "lit/directives/ref.js";
 import { arrayEqual } from "../utils/misc-utils.mjs";
 
 /** @typedef {{ path: (string | typeof Number)[]; }} DataPath */

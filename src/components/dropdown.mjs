@@ -1,4 +1,5 @@
-import { classMap, html, LitElement, render as litRender } from "../lib/lit-all.min.js";
+import { html, LitElement, render as litRender } from "lit";
+import { classMap } from "lit/directives/class-map.js";
 
 /**
  * Abstract class for implementing a custom dropdown element.
