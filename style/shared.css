@@ -1,0 +1,6 @@
+/* Using button.active could easily collide with other modules. */
+button.btn-active-fwl {
+	background: var(--button-hover-background-color);
+	color: var(--button-hover-text-color);
+	box-shadow: 0 0 5px var(--color-shadow-primary);
+}
