@@ -1,4 +1,5 @@
-/** @import { AURA_POSITIONS, EFFECT_MODES, MACRO_MODES, EASING_FUNCTIONS, SEQUENCE_TRIGGERS, SEQUENCE_POSITIONS, THT_RULER_ON_DRAG_MODES } from "../consts.mjs" */
+/** @import { AURA_POSITIONS, EFFECT_MODES, MACRO_MODES, SEQUENCE_TRIGGERS, SEQUENCE_POSITIONS, THT_RULER_ON_DRAG_MODES } from "../consts.mjs" */
+/** @import { ColorAnimation } from "../shared/color/color-animation.mjs" */
 import { DOCUMENT_AURAS_FLAG, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { createRadiusExtensionProxy, hasRadiusExtensions } from "./aura-radius-expression-extensions.mjs";
 
@@ -85,12 +86,6 @@ export const latestAuraConfigVersion = 1;
  * @property {EASING_FUNCTIONS} scaleOutEasing
  * @property {number} playbackRate
  * @property {boolean} belowTokens
- */
-/**
- * @typedef {Object} ColorAnimation
- * @property {{ color: number; alpha: number; position: number; }[]} keyframes
- * @property {number} duration
- * @property {EASING_FUNCTIONS} easingFunc
  */
 
 /**

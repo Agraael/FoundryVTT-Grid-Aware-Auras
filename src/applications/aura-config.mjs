@@ -3,14 +3,12 @@ import { html, nothing, render } from "lit";
 import { classMap } from "lit/directives/class-map.js";
 import { createRef } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
-import "../components/color-animation-editor.mjs";
 import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
 import {
 	AURA_POSITIONS,
 	AURA_VISIBILITY_MODES,
-	EASING_FUNCTIONS,
 	EFFECT_MODES,
 	ENABLE_EFFECT_AUTOMATION_SETTING,
 	ENABLE_MACRO_AUTOMATION_SETTING,
@@ -29,7 +27,9 @@ import {
 	macroConfigDefaults,
 	sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
-import { selectOptions } from "../utils/lit-utils.mjs";
+import { EASING_FUNCTIONS } from "../shared/animation/easing-functions.mjs";
+import { selectOptions } from "../shared/directives/select-options.mjs";
+import "../shared/elements/color-animation-editor/color-animation-editor.mjs";
 import { isSequencerActive, isTerrainHeightToolsActive, partialEqual } from "../utils/misc-utils.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -302,10 +302,10 @@ export class AuraConfigApplication extends ApplicationV2 {
 					<div class="form-group">
 						<label>${l("DRAWING.StrokeColor")}</label>
 						<div class="form-fields">
-							<gaa-color-animation-editor
+							<color-animation-editor-fwl
 								name="lineColorAnimation"
 								.value=${this.#aura.lineColorAnimation}
-							></gaa-color-animation-editor>
+							></color-animation-editor-fwl>
 							<button
 								type="button"
 								class="gaa-btn-active"
@@ -371,10 +371,10 @@ export class AuraConfigApplication extends ApplicationV2 {
 					<div class="form-group">
 						<label>${l("DRAWING.FillColor")}</label>
 						<div class="form-fields">
-							<gaa-color-animation-editor
+							<color-animation-editor-fwl
 								name="fillColorAnimation"
 								.value=${this.#aura.fillColorAnimation}
-							></gaa-color-animation-editor>
+							></color-animation-editor-fwl>
 							<button
 								type="button"
 								class="gaa-btn-active"
@@ -887,7 +887,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="fadeInDuration" value=${effect.fadeInDuration} min="0" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="fadeInEasing" ?disabled=${this.#disabled}>
-								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeInEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeInEasing, labelSelector: ([, name]) => `GRIDAWAREAURAS.${name}` })}
 							</select>
 						</div>
 					</div>
@@ -898,7 +898,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="fadeOutDuration" value=${effect.fadeOutDuration} min="0" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="fadeOutEasing" ?disabled=${this.#disabled}>
-								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeOutEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.fadeOutEasing, labelSelector: ([, name]) => `GRIDAWAREAURAS.${name}` })}
 							</select>
 						</div>
 					</div>
@@ -928,7 +928,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="scaleInDuration" value=${effect.scaleInDuration} min="0" step="0.01" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="scaleInEasing" style="flex: 2" ?disabled=${this.#disabled}>
-								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleInEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleInEasing, labelSelector: ([, name]) => `GRIDAWAREAURAS.${name}` })}
 							</select>
 						</div>
 					</div>
@@ -941,7 +941,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 							<input type="number" name="scaleOutDuration" value=${effect.scaleOutDuration} min="0" step="0.01" ?disabled=${this.#disabled}>
 							<span class="units" style="margin-right: 0.75rem">ms</span>
 							<select name="scaleOutEasing" style="flex: 2" ?disabled=${this.#disabled}>
-								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleOutEasing })}
+								${selectOptions(EASING_FUNCTIONS, { selected: effect.scaleOutEasing, labelSelector: ([, name]) => `GRIDAWAREAURAS.${name}` })}
 							</select>
 						</div>
 					</div>

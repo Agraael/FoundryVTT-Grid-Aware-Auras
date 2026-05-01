@@ -119,14 +119,6 @@ export const SEQUENCE_POSITIONS = /** @type {const} */ ({
 	TARGET_TO_OWNER: "GRIDAWAREAURAS.SequencePositionFromTargetToOwner"
 });
 
-/** @enum {keyof typeof EASING_FUNCTIONS} */
-export const EASING_FUNCTIONS = /** @type {const} */ ({
-	linear: "GRIDAWAREAURAS.EasingLinear",
-	easeInCubic: "GRIDAWAREAURAS.EasingEaseIn",
-	easeOutCubic: "GRIDAWAREAURAS.EasingEaseOut",
-	easeInOutCubic: "GRIDAWAREAURAS.EasingEaseInOut"
-});
-
 /** @enum {keyof typeof THT_RULER_ON_DRAG_MODES} */
 export const THT_RULER_ON_DRAG_MODES = /** @type {const} */ ({
 	NONE: "GRIDAWAREAURAS.ThtRulerOnDragModeNone",

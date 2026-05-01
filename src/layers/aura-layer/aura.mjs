@@ -2,9 +2,9 @@
 /** @import { AuraGeometry } from "./geometry/index.mjs" */
 import { LINE_TYPES, MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
-import { createTintAlphaColorAnimationTicker } from "../../utils/animation-utils.mjs";
+import { createColorAnimationTicker } from "../../shared/color/color-animation.mjs";
+import { drawComplexPath, drawDashedComplexPath } from "../../shared/pixi/drawing.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
-import { drawComplexPath, drawDashedComplexPath } from "../../utils/pixi-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
 
 /**
@@ -288,7 +288,7 @@ export class Aura {
 		this.#lineGraphics.alpha = auraConfig.lineOpacity;
 
 		if (auraConfig.lineColorAnimation) {
-			this.#lineGraphicsTickFn = createTintAlphaColorAnimationTicker(this.#lineGraphics, auraConfig.lineColorAnimation);
+			this.#lineGraphicsTickFn = createColorAnimationTicker(this.#lineGraphics, auraConfig.lineColorAnimation);
 			canvas.app.ticker.add(this.#lineGraphicsTickFn);
 		}
 	}
@@ -342,7 +342,7 @@ export class Aura {
 		this.#fillGraphics.alpha = auraConfig.fillOpacity;
 
 		if (auraConfig.fillColorAnimation) {
-			this.#fillGraphicsTickFn = createTintAlphaColorAnimationTicker(this.#fillGraphics, auraConfig.fillColorAnimation);
+			this.#fillGraphicsTickFn = createColorAnimationTicker(this.#fillGraphics, auraConfig.fillColorAnimation);
 			canvas.app.ticker.add(this.#fillGraphicsTickFn);
 		}
 	}

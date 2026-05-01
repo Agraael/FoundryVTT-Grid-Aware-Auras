@@ -17,6 +17,9 @@ export default defineConfig({
 		fileName: "module.css",
 		minify: true
 	},
+	copy: [
+		{ from: "src/shared/assets/**", to: "dist/assets" }
+	],
 	checks: {
 		circularDependency: true,
 	}
