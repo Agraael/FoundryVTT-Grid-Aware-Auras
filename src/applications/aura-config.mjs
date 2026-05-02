@@ -253,6 +253,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 	};
 
 	#linesTab = () => {
+		const isNone = this.#aura.lineType === LINE_TYPES.NONE;
 		const isDashed = this.#aura.lineType === LINE_TYPES.DASHED;
 
 		return html`
@@ -270,14 +271,14 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": isNone })}>
 					<label>${l("DRAWING.LineWidth")} <span class="units">(px)</span></label>
 					<div class="form-fields">
 						<input type="number" name="lineWidth" .value=${this.#aura.lineWidth} required min="0" step="1" ?disabled=${this.#disabled}>
 					</div>
 				</div>
 
-				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.lineColorAnimation })}>
+				<div class=${classMap({ "form-group": true, "hidden": isNone || !!this.#aura.lineColorAnimation })}>
 					<label>${l("DRAWING.StrokeColor")}</label>
 					<div class="form-fields">
 						<color-picker name="lineColor" .value=${this.#aura.lineColor} ?disabled=${this.#disabled}></color-picker>
@@ -285,32 +286,35 @@ export class AuraConfigApplication extends ApplicationV2 {
 							type="button"
 							data-tooltip="Enable animation"
 							@click=${() => this.#setAuraProperty("lineColorAnimation", lineColorAnimationDefaults())}
+							?disabled=${this.#disabled}
 						>
 							<i class="fas fa-sparkles m-0"></i>
 						</button>
 					</div>
 				</div>
 
-				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.lineColorAnimation })}>
+				<div class=${classMap({ "form-group": true, "hidden": isNone || !!this.#aura.lineColorAnimation })}>
 					<label>${l("DRAWING.LineOpacity")}</label>
 					<div class="form-fields">
 						<range-picker name="lineOpacity" .value=${this.#aura.lineOpacity} min="0" max="1" step="0.1" ?disabled=${this.#disabled}></range-picker>
 					</div>
 				</div>
 
-				${when(this.#aura.lineColorAnimation, () => html`
+				${when(this.#aura.lineColorAnimation && !isNone, () => html`
 					<div class="form-group">
 						<label>${l("DRAWING.StrokeColor")}</label>
 						<div class="form-fields">
 							<color-animation-editor-fwl
 								name="lineColorAnimation"
 								.value=${this.#aura.lineColorAnimation}
+								?disabled=${this.#disabled}
 							></color-animation-editor-fwl>
 							<button
 								type="button"
 								class="gaa-btn-active"
 								data-tooltip="Disable animation"
 								@click=${() => this.#setAuraProperty("lineColorAnimation", null)}
+								?disabled=${this.#disabled}
 							>
 								<i class="fas fa-sparkles m-0"></i>
 							</button>
@@ -318,18 +322,18 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				`)}
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !isDashed })}>
 					<label>Dash Config <span class="units">(px)</span></label>
 					<div class="form-fields">
-						<input type="number" name="lineDashSize" placeholder="Dash" .value=${this.#aura.lineDashSize} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
-						<input type="number" name="lineGapSize" placeholder="Gap" .value=${this.#aura.lineGapSize} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
+						<input type="number" name="lineDashSize" placeholder="Dash" .value=${this.#aura.lineDashSize} required min="0" step="1" ?disabled=${this.#disabled}>
+						<input type="number" name="lineGapSize" placeholder="Gap" .value=${this.#aura.lineGapSize} required min="0" step="1" ?disabled=${this.#disabled}>
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !isDashed })}>
 					<label>Dash Animation <span class="units">(px/s)</span></label>
 					<div class="form-fields">
-						<input type="number" name="lineDashOffsetAnimation" placeholder="Dash" .value=${this.#aura.lineDashOffsetAnimation} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
+						<input type="number" name="lineDashOffsetAnimation" placeholder="Dash" .value=${this.#aura.lineDashOffsetAnimation} required min="0" step="1" ?disabled=${this.#disabled}>
 					</div>
 				</div>
 			</div>
@@ -337,6 +341,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 	};
 
 	#fillTab = () => {
+		const isNone = this.#aura.fillType === CONST.DRAWING_FILL_TYPES.NONE;
 		const isPattern = this.#aura.fillType === CONST.DRAWING_FILL_TYPES.PATTERN;
 		return html`
 			<div class="standard-form">
@@ -353,7 +358,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillColorAnimation })}>
+				<div class=${classMap({ "form-group": true, "hidden": isNone || !!this.#aura.fillColorAnimation })}>
 					<label>${l("DRAWING.FillColor")}</label>
 					<div class="form-fields">
 						<color-picker name="fillColor" .value=${this.#aura.fillColor} ?disabled=${this.#disabled}></color-picker>
@@ -361,32 +366,35 @@ export class AuraConfigApplication extends ApplicationV2 {
 							type="button"
 							data-tooltip="Enable animation"
 							@click=${() => this.#setAuraProperty("fillColorAnimation", fillColoAnimationDefaults())}
+							?disabled=${this.#disabled}
 						>
 							<i class="fas fa-sparkles m-0"></i>
 						</button>
 					</div>
 				</div>
 
-				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillColorAnimation })}>
+				<div class=${classMap({ "form-group": true, "hidden": isNone || !!this.#aura.fillColorAnimation })}>
 					<label>${l("DRAWING.FillOpacity")}</label>
 					<div class="form-fields">
 						<range-picker name="fillOpacity" .value=${this.#aura.fillOpacity} min="0" max="1" step="0.1" ?disabled=${this.#disabled}></range-picker>
 					</div>
 				</div>
 
-				${when(this.#aura.fillColorAnimation, () => html`
+				${when(!isNone && this.#aura.fillColorAnimation, () => html`
 					<div class="form-group">
 						<label>${l("DRAWING.FillColor")}</label>
 						<div class="form-fields">
 							<color-animation-editor-fwl
 								name="fillColorAnimation"
 								.value=${this.#aura.fillColorAnimation}
+								?disabled=${this.#disabled}
 							></color-animation-editor-fwl>
 							<button
 								type="button"
 								class="gaa-btn-active"
 								data-tooltip="Disable animation"
 								@click=${() => this.#setAuraProperty("fillColorAnimation", null)}
+								?disabled=${this.#disabled}
 							>
 								<i class="fas fa-sparkles m-0"></i>
 							</button>
@@ -394,39 +402,41 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				`)}
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !isPattern })}>
 					<label>${l("DRAWING.FillTexture")}</label>
 					<div class="form-fields">
 						<file-picker name="fillTexture" type="image" value=${this.#aura.fillTexture} ?disabled=${this.#disabled}></file-picker>
 					</div>
 				</div>
 
-				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillTextureOffsetAnimation })}>
+				<div class=${classMap({ "form-group": true, "hidden": !isPattern || !!this.#aura.fillTextureOffsetAnimation })}>
 					<label>Texture Offset <span class="units">(px)</span></label>
 					<div class="form-fields">
-						<input type="number" name="fillTextureOffset.x" placeholder="x" .value=${this.#aura.fillTextureOffset.x} required ?disabled=${this.#disabled || !isPattern}>
-						<input type="number" name="fillTextureOffset.y" placeholder="y" .value=${this.#aura.fillTextureOffset.y} required ?disabled=${this.#disabled || !isPattern}>
+						<input type="number" name="fillTextureOffset.x" placeholder="x" .value=${this.#aura.fillTextureOffset.x} required ?disabled=${this.#disabled}>
+						<input type="number" name="fillTextureOffset.y" placeholder="y" .value=${this.#aura.fillTextureOffset.y} required ?disabled=${this.#disabled}>
 						<button
 							type="button"
 							data-tooltip="Enable animation"
 							@click=${() => this.#setAuraProperty("fillTextureOffsetAnimation", { x: 0, y: 0 })}
+							?disabled=${this.#disabled}
 						>
 							<i class="fas fa-sparkles m-0"></i>
 						</button>
 					</div>
 				</div>
 
-				${when(this.#aura.fillTextureOffsetAnimation, () => html`
+				${when(isPattern && this.#aura.fillTextureOffsetAnimation, () => html`
 					<div class="form-group">
 						<label>Texture Animation <span class="units">(px/s)</span></label>
 						<div class="form-fields">
-							<input type="number" name="fillTextureOffsetAnimation.x" placeholder="x" .value=${this.#aura.fillTextureOffsetAnimation.x} required ?disabled=${this.#disabled || !isPattern}>
-							<input type="number" name="fillTextureOffsetAnimation.y" placeholder="y" .value=${this.#aura.fillTextureOffsetAnimation.y} required ?disabled=${this.#disabled || !isPattern}>
+							<input type="number" name="fillTextureOffsetAnimation.x" placeholder="x" .value=${this.#aura.fillTextureOffsetAnimation.x} required ?disabled=${this.#disabled}>
+							<input type="number" name="fillTextureOffsetAnimation.y" placeholder="y" .value=${this.#aura.fillTextureOffsetAnimation.y} required ?disabled=${this.#disabled}>
 							<button
 								type="button"
 								class="gaa-btn-active"
 								data-tooltip="Disable animation"
 								@click=${() => this.#setAuraProperty("fillTextureOffsetAnimation", null)}
+								?disabled=${this.#disabled}
 							>
 								<i class="fas fa-sparkles m-0"></i>
 							</button>
@@ -434,11 +444,11 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				`)}
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !isPattern })}>
 					<label>Texture Scale <span class="units">(%)</span></label>
 					<div class="form-fields">
-						<input type="number" name="fillTextureScale.x" placeholder="x" .value=${this.#aura.fillTextureScale.x} required ?disabled=${this.#disabled || !isPattern}>
-						<input type="number" name="fillTextureScale.y" placeholder="y" .value=${this.#aura.fillTextureScale.y} required ?disabled=${this.#disabled || !isPattern}>
+						<input type="number" name="fillTextureScale.x" placeholder="x" .value=${this.#aura.fillTextureScale.x} required ?disabled=${this.#disabled}>
+						<input type="number" name="fillTextureScale.y" placeholder="y" .value=${this.#aura.fillTextureScale.y} required ?disabled=${this.#disabled}>
 					</div>
 				</div>
 			</div>
@@ -1018,7 +1028,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</div>
 			</div>
 
-			<div class="form-group">
+			<div class=${classMap({ "form-group": true, "hidden": this.#aura.terrainHeightTools.rulerOnDrag === "NONE" })}>
 				<label>Target Tokens</label>
 				<div class="form-fields">
 					<select name="terrainHeightTools.targetTokens" ?disabled=${this.#disabled}>

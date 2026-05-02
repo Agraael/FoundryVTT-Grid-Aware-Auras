@@ -51,7 +51,7 @@ export class PresetManagerApplication extends ApplicationV2 {
 						<th class="text-center" style="width: 58px">Radius</th>
 						<th class="text-center" style="width: 58px">Line</th>
 						<th class="text-center" style="width: 58px">Fill</th>
-						<td class="text-center" style="width: 190px">Auto-apply to <i class="fas fa-question-circle cursor-help" data-tooltip="Automatically apply this aura to newly created tokens of the selected actor types"></i></td>
+						<th class="text-center" style="width: 190px">Auto-apply to <i class="fas fa-question-circle cursor-help" data-tooltip="Automatically apply this aura to newly created tokens of the selected actor types"></i></th>
 						<th class="text-center" style="width: 45px">
 							<a @click=${this.#openCreateContextMenu}>
 								<i class="fas fa-plus"></i>

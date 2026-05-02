@@ -307,7 +307,7 @@
 	box-shadow: 0 3px 6px rgb(0 0 0 / 45%);
 }
 
-.themed.theme-light .gaa-dropdown-menu {
+.theme-light .gaa-dropdown-menu {
 	--background-color: #d9d8c8;
     --border-color: #999;
     --text-color: var(--color-text-secondary);
@@ -408,7 +408,7 @@ gaa-multi-select:is(:focus, .gaa-multi-select-open) {
 	--input-text-color: var(--color-light-1);
 }
 
-.themed.theme-light gaa-multi-select {
+.theme-light gaa-multi-select {
 	--input-background-color: rgba(0, 0, 0, 0.1);
     --input-border-color: var(--color-dark-6);
     --input-text-color: var(--color-dark-2);
@@ -416,7 +416,7 @@ gaa-multi-select:is(:focus, .gaa-multi-select-open) {
     --input-focus-outline-color: var(--color-warm-2);
 }
 
-.themed.theme-light gaa-multi-select:is(:focus, .gaa-multi-select-open) {
+.theme-light gaa-multi-select:is(:focus, .gaa-multi-select-open) {
 	--input-text-color: var(--color-dark-1);
 }
 
