@@ -1,6 +1,6 @@
 /** @import { EASING_FUNCTIONS } from "../animation/easing-functions.mjs" */
 import { easingFunctions } from "../animation/easing-functions.mjs";
-import { premultiply, unpremultiply } from "./conversions.mjs";
+import { premultiply } from "./conversions.mjs";
 import { interpolateColor, interpolateNumber } from "./interpolation.mjs";
 
 /**
@@ -27,7 +27,7 @@ export function premultiplyKeyframes(keyframes) {
 
 /**
  * Gets the color and alpha of the animation at the given time.
- * @param {ColorAnimation["keyframes"]} keyframes Animation whose keyframes to search.
+ * @param {ColorAnimationKeyframe[]} keyframes Animation whose keyframes to search.
  * @param {number} duration
  * @param {EASING_FUNCTIONS} easingFuncName
  * @param {number} time
@@ -69,24 +69,4 @@ export function getColorAnimationValue(keyframes, duration, easingFuncName, time
 	}
 
 	return { color: 0, alpha: 0, insertIndex: 0 }; // should never be possible, but just in case
-}
-
-/**
- * Creates a function that updates properties of the target object based on the given animation.
- * @param {T} target
- * @param {ColorAnimation} animation
- * @param {Object} [options]
- * @param {keyof T} [options.colorPropertyName] The name of the property to set the (numeric) color to. Default = "tint".
- * @param {keyof T} [options.alphaPropertyName] The name of the property to set the alpha to. Default = "alpha".
- */
-export function createColorAnimationTicker(target, animation, { colorPropertyName = "tint", alphaPropertyName = "alpha" } = {}) {
-	const premultKeyframes = premultiplyKeyframes(animation.keyframes);
-	const { duration, easingFunc } = animation;
-
-	return () => {
-		// Use global Date.now() instead of delta time so that all animations of the same type are synced
-		const { color, alpha } = getColorAnimationValue(premultKeyframes, duration, easingFunc, Date.now());
-		target[colorPropertyName] = unpremultiply(color, alpha);
-		target[alphaPropertyName] = alpha;
-	};
 }
