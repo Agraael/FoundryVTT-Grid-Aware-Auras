@@ -42,11 +42,14 @@ export class Aura {
 	 */
 	#innerGeometry = null;
 
+	#boundTick;
+
 	/** @param {Token} token */
 	constructor(token) {
 		this.#token = token;
 		this.#graphics = new PolygonGraphic();
 		this.#graphics.sortLayer = 690; // Render just below tokens
+		this.#boundTick = this.#graphics.tick.bind(this.#graphics);
 	}
 
 	get graphics() {
@@ -152,7 +155,7 @@ export class Aura {
 	}
 
 	destroy(...args) {
-		canvas.app.ticker.remove(this.#graphics.tick);
+		canvas.app.ticker.remove(this.#boundTick);
 		this.#graphics.destroy(...args);
 	}
 
@@ -228,7 +231,7 @@ export class Aura {
 			this.#geometry.bounds
 		);
 
-		canvas.app.ticker.add(this.#graphics.tick);
+		canvas.app.ticker.add(this.#boundTick);
 
 		/**
 		 * Creates a geometry of the specified radius for the current grid type and scoped token size/shape.

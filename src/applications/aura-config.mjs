@@ -6,25 +6,25 @@ import { when } from "lit/directives/when.js";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
 import {
-    AURA_POSITIONS,
-    AURA_VISIBILITY_MODES,
-    EFFECT_MODES,
-    ENABLE_EFFECT_AUTOMATION_SETTING,
-    ENABLE_MACRO_AUTOMATION_SETTING,
-    LINE_TYPES, MACRO_MODES, MODULE_NAME,
-    SEQUENCE_POSITIONS,
-    SEQUENCE_TRIGGERS,
-    THT_RULER_ON_DRAG_MODES
+	AURA_POSITIONS,
+	AURA_VISIBILITY_MODES,
+	EFFECT_MODES,
+	ENABLE_EFFECT_AUTOMATION_SETTING,
+	ENABLE_MACRO_AUTOMATION_SETTING,
+	LINE_TYPES, MACRO_MODES, MODULE_NAME,
+	SEQUENCE_POSITIONS,
+	SEQUENCE_TRIGGERS,
+	THT_RULER_ON_DRAG_MODES
 } from "../consts.mjs";
 import { listAuraTargetFilters } from "../data/aura-target-filters.mjs";
 import {
-    auraVisibilityModeMatrices,
-    calculateAuraRadius,
-    effectConfigDefaults,
-    fillColoAnimationDefaults,
-    lineColorAnimationDefaults,
-    macroConfigDefaults,
-    sequencerEffectConfigDefaults
+	auraVisibilityModeMatrices,
+	calculateAuraRadius,
+	effectConfigDefaults,
+	fillColoAnimationDefaults,
+	lineColorAnimationDefaults,
+	macroConfigDefaults,
+	sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
 import { EASING_FUNCTIONS } from "../shared/animation/easing-functions.mjs";
 import { selectOptions } from "../shared/directives/select-options.mjs";
@@ -333,7 +333,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 				<div class=${classMap({ "form-group": true, "hidden": !isDashed })}>
 					<label>Dash Animation <span class="units">(px/s)</span></label>
 					<div class="form-fields">
-						<input type="number" name="lineDashOffsetAnimation" placeholder="Dash" .value=${this.#aura.lineDashOffsetAnimation} required min="0" step="1" ?disabled=${this.#disabled}>
+						<input type="number" name="lineDashOffsetAnimation" placeholder="Dash" .value=${this.#aura.lineDashOffsetAnimation} required step="1" ?disabled=${this.#disabled}>
 					</div>
 				</div>
 			</div>
