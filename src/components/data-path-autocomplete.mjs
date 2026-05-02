@@ -80,7 +80,7 @@ class DataPathAutoComplete extends LitElement {
 
 	#renderDropdown() {
 		return html`
-			<menu class="gaa-dropdown-menu">
+			<menu class="dropdown-menu-fwl">
 				${this._filteredDataPaths.map(dp => html`
 					<li
 						class=${classMap({ active: dp === this._focusedDataPath })}

@@ -1,5 +1,6 @@
 import { html, LitElement } from "lit";
 import { when } from "lit/directives/when.js";
+import "./context-menu.css";
 
 /**
  * @typedef {Object} ContextMenuItem
@@ -10,7 +11,7 @@ import { when } from "lit/directives/when.js";
  * @property {undefined | "separator"} [type]
  */
 
-export const elementName = "gaa-context-menu";
+export const elementName = "context-menu-fwl";
 
 /** @type {HTMLDivElement | undefined} */
 let container;
@@ -45,7 +46,7 @@ export class ContextMenu extends LitElement {
 
 	render() {
 		return html`
-			<menu class="gaa-dropdown-menu gaa-dropdown-menu-hover" @mousedown=${this.#onMenuMouseDown}>
+			<menu class="dropdown-menu-fwl dropdown-menu-fwl-hover" @mousedown=${this.#onMenuMouseDown}>
 				${this.items.map(this.#renderItem)}
 			</menu>
 		`;
@@ -58,10 +59,10 @@ export class ContextMenu extends LitElement {
 	#renderItem = (item, idx) => {
 		switch (item.type) {
 			case "separator":
-				return html`<li class="gaa-context-menu-separator"></li>`;
+				return html`<li class="context-menu-fwl-separator"></li>`;
 
 			default:
-				return html`<li class="gaa-context-menu-item" data-item-index=${idx}>
+				return html`<li class="context-menu-fwl-item" data-item-index=${idx}>
 					${when(item.icon, () => html`<i class=${item.icon}></i>`)}
 					<span>${item.label}</span>
 					${when(item.children?.length, () => html`<i class="fas fa-caret-right"></i>`)}
@@ -178,7 +179,7 @@ export class ContextMenu extends LitElement {
 	static open(e, items, { parentMenu, parentMenuItem } = {}) {
 		if (!container) {
 			container = document.createElement("div");
-			container.id = "gaa-context-menu-container";
+			container.id = "context-menu-fwl-container";
 			document.body.appendChild(container);
 		}
 
@@ -199,4 +200,6 @@ export class ContextMenu extends LitElement {
 	}
 }
 
-customElements.define(elementName, ContextMenu);
+if (!customElements.get(elementName)) {
+	customElements.define(elementName, ContextMenu);
+}

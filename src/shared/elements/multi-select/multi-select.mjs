@@ -1,8 +1,9 @@
 import { html, LitElement, render as litRender } from "lit";
 import { classMap } from "lit/directives/class-map.js";
 import { when } from "lit/directives/when.js";
+import "./multi-select.css";
 
-export const elementName = "gaa-multi-select";
+export const elementName = "multi-select-fwl";
 
 export class MultiSelect extends LitElement {
 
@@ -57,13 +58,13 @@ export class MultiSelect extends LitElement {
 
 	render() {
 		return html`
-			<div class="gaa-multi-select-button" @mousedown=${() => this._isOpen = !this._isOpen}>
-				<div class="gaa-multi-select-button-label-container">
+			<div class="multi-select-fwl-button" @mousedown=${() => this._isOpen = !this._isOpen}>
+				<div class="multi-select-fwl-button-label-container">
 					${when(!this.value?.length, () => html`
-						<span class="gaa-multi-select-button-label-placeholder">${this.placeholder}</span>
+						<span class="multi-select-fwl-button-label-placeholder">${this.placeholder}</span>
 					`, () => html`
-						<span class="gaa-multi-select-button-label-primary">${this.#buttonLabel}</span>
-						<span class="gaa-multi-select-button-label-alternate">${this.value.length} selected</span>
+						<span class="multi-select-fwl-button-label-primary">${this.#buttonLabel}</span>
+						<span class="multi-select-fwl-button-label-alternate">${this.value.length} selected</span>
 					`)}
 				</div>
 				<i class="fas fa-chevron-down"></i>
@@ -84,14 +85,14 @@ export class MultiSelect extends LitElement {
 		// Create the container if required
 		if (!this.#dropdownContainer) {
 			this.#dropdownContainer = document.createElement("div");
-			this.#dropdownContainer.classList.add("gaa-multi-select-dropdown");
+			this.#dropdownContainer.classList.add("multi-select-fwl-dropdown");
 			document.body.appendChild(this.#dropdownContainer);
 		}
 
 		// Render dropdown into the container
 		const selectedValues = new Set(this.value ?? []);
 
-		litRender(html`<menu class="gaa-dropdown-menu gaa-dropdown-menu-hover">
+		litRender(html`<menu class="dropdown-menu-fwl dropdown-menu-fwl-hover">
 			${this.items.map(item => html`
 				<li
 					class=${classMap({ checked: selectedValues.has(this.#getItemValue(item)) })}
@@ -130,7 +131,7 @@ export class MultiSelect extends LitElement {
 		super.update(changedProperties);
 
 		if (changedProperties.has("_isOpen"))
-			this.classList.toggle("gaa-multi-select-open", this._isOpen);
+			this.classList.toggle("multi-select-fwl-open", this._isOpen);
 
 		this.#renderDropdown();
 	}
@@ -143,8 +144,8 @@ export class MultiSelect extends LitElement {
 	#updateLabel() {
 		// When rendering, check to see if the primary label is longer than the available space.
 		// If so, hide the primary label and show the alternative label
-		const primaryLabel = this.querySelector(".gaa-multi-select-button-label-primary");
-		const alternateLabel = this.querySelector(".gaa-multi-select-button-label-alternate");
+		const primaryLabel = this.querySelector(".multi-select-fwl-button-label-primary");
+		const alternateLabel = this.querySelector(".multi-select-fwl-button-label-alternate");
 		if (!primaryLabel || !alternateLabel) return;
 
 		const isPrimaryOverflowing = primaryLabel.scrollWidth > primaryLabel.clientWidth;
@@ -173,7 +174,7 @@ export class MultiSelect extends LitElement {
 	#onDocumentMouseDown = e => {
 		if (!this._isOpen) return;
 
-		const isInside = e.target.closest(".gaa-multi-select-dropdown") === this.#dropdownContainer
+		const isInside = e.target.closest(".multi-select-fwl-dropdown") === this.#dropdownContainer
 			|| e.target.closest(elementName) === this;
 
 		if (!isInside)
@@ -225,4 +226,6 @@ export class MultiSelect extends LitElement {
 	}
 }
 
-customElements.define(elementName, MultiSelect);
+if (!customElements.get(elementName)) {
+	customElements.define(elementName, MultiSelect);
+}

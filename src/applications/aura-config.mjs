@@ -3,33 +3,33 @@ import { html, nothing, render } from "lit";
 import { classMap } from "lit/directives/class-map.js";
 import { createRef } from "lit/directives/ref.js";
 import { when } from "lit/directives/when.js";
-import { ContextMenu } from "../components/context-menu.mjs";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
 import {
-	AURA_POSITIONS,
-	AURA_VISIBILITY_MODES,
-	EFFECT_MODES,
-	ENABLE_EFFECT_AUTOMATION_SETTING,
-	ENABLE_MACRO_AUTOMATION_SETTING,
-	LINE_TYPES, MACRO_MODES, MODULE_NAME,
-	SEQUENCE_POSITIONS,
-	SEQUENCE_TRIGGERS,
-	THT_RULER_ON_DRAG_MODES
+    AURA_POSITIONS,
+    AURA_VISIBILITY_MODES,
+    EFFECT_MODES,
+    ENABLE_EFFECT_AUTOMATION_SETTING,
+    ENABLE_MACRO_AUTOMATION_SETTING,
+    LINE_TYPES, MACRO_MODES, MODULE_NAME,
+    SEQUENCE_POSITIONS,
+    SEQUENCE_TRIGGERS,
+    THT_RULER_ON_DRAG_MODES
 } from "../consts.mjs";
 import { listAuraTargetFilters } from "../data/aura-target-filters.mjs";
 import {
-	auraVisibilityModeMatrices,
-	calculateAuraRadius,
-	effectConfigDefaults,
-	fillColoAnimationDefaults,
-	lineColorAnimationDefaults,
-	macroConfigDefaults,
-	sequencerEffectConfigDefaults
+    auraVisibilityModeMatrices,
+    calculateAuraRadius,
+    effectConfigDefaults,
+    fillColoAnimationDefaults,
+    lineColorAnimationDefaults,
+    macroConfigDefaults,
+    sequencerEffectConfigDefaults
 } from "../data/aura.mjs";
 import { EASING_FUNCTIONS } from "../shared/animation/easing-functions.mjs";
 import { selectOptions } from "../shared/directives/select-options.mjs";
 import "../shared/elements/color-animation-editor/color-animation-editor.mjs";
+import { ContextMenu } from "../shared/elements/context-menu/context-menu.mjs";
 import { isSequencerActive, isTerrainHeightToolsActive, partialEqual } from "../utils/misc-utils.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;

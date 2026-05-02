@@ -2,13 +2,13 @@
 /** @import { Preset } from "../data/preset.mjs" */
 import { html, render } from "lit";
 import { when } from "lit/directives/when.js";
-import { ContextMenu } from "../components/context-menu.mjs";
-import "../components/multi-select.mjs";
 import { LINE_TYPES } from "../consts.mjs";
 import { createAura, exportAuraJson, getAura, importAuraJson } from "../data/aura.mjs";
 import { getPresets, savePresets } from "../data/preset.mjs";
 import { toCssRgbString } from "../shared/color/conversions.mjs";
 import { styleColorAnimation } from "../shared/directives/style-color-animation.mjs";
+import { ContextMenu } from "../shared/elements/context-menu/context-menu.mjs";
+import "../shared/elements/multi-select/multi-select.mjs";
 import { AuraConfigApplication } from "./aura-config.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -93,12 +93,12 @@ export class PresetManagerApplication extends ApplicationV2 {
 								))}
 							</td>
 							<td>
-								<gaa-multi-select
+								<multi-select-fwl
 									.items=${actorTypes}
 									placeholder="None"
 									.value=${preset.applyToNew}
 									@change=${e => this.#updateApplyToNew(preset.config.id, e)}
-								></gaa-multi-select>
+								></multi-select-fwl>
 							</td>
 							<td class="text-center" style="width: 45px">
 								${when(!this.disabled, () => html`

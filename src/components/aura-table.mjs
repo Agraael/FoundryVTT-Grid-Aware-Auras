@@ -8,7 +8,7 @@ import { calculateAuraRadius, createAura, exportAuraJson, getAura } from "../dat
 import { getPresetsRaw, saveAuraAsNewPreset } from "../data/preset.mjs";
 import { toCssRgbString } from "../shared/color/conversions.mjs";
 import { styleColorAnimation } from "../shared/directives/style-color-animation.mjs";
-import { ContextMenu } from "./context-menu.mjs";
+import { ContextMenu } from "../shared/elements/context-menu/context-menu.mjs";
 
 export const elementName = "gaa-aura-table";
 
