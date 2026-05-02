@@ -1,13 +1,16 @@
 import { defineConfig } from 'tsdown';
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export default defineConfig({
 	entry: ["./src/main.mjs"],
 	outDir: "dist",
 	outputOptions: {
-		entryFileNames: "module.js"
+		entryFileNames: "module.js",
 	},
+	format: "iife",
 	platform: "browser",
-	minify: true,
+	minify: isProduction,
 	sourcemap: true,
 	deps: {
 		onlyBundle: false,
@@ -15,7 +18,7 @@ export default defineConfig({
 	},
 	css: {
 		fileName: "module.css",
-		minify: true
+		minify: isProduction
 	},
 	copy: [
 		{ from: "src/shared/assets/**", to: "dist/assets" }

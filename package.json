@@ -4,7 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "tsdown -w",
-		"build": "tsdown",
+		"build": "NODE_ENV=production tsdown",
 		"lint": "eslint -c eslint.config.mjs"
 	},
 	"dependencies": {
