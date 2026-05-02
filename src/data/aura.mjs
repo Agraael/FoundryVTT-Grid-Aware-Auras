@@ -21,12 +21,14 @@ export const latestAuraConfigVersion = 1;
  * @property {number} lineOpacity
  * @property {number} lineDashSize
  * @property {number} lineGapSize
+ * @property {number} lineDashOffsetAnimation
  * @property {number} fillType
  * @property {string} fillColor
  * @property {ColorAnimation | null} fillColorAnimation
  * @property {number} fillOpacity
  * @property {string} fillTexture
  * @property {{ x: number; y: number; }} fillTextureOffset
+ * @property {{ x: number; y: number; } | null} fillTextureOffsetAnimation
  * @property {{ x: number; y: number; }} fillTextureScale
  * @property {VisibilityConfig} ownerVisibility
  * @property {VisibilityConfig} nonOwnerVisibility
@@ -228,12 +230,14 @@ export const auraDefaults = () => ({
 	lineOpacity: 0.8,
 	lineDashSize: 15,
 	lineGapSize: 10,
+	lineDashOffsetAnimation: 0,
 	fillType: CONST.DRAWING_FILL_TYPES.SOLID,
 	fillColor: "#FF0000",
 	fillColorAnimation: null,
 	fillOpacity: 0.1,
 	fillTexture: "",
 	fillTextureOffset: { x: 0, y: 0 },
+	fillTextureOffsetAnimation: null,
 	fillTextureScale: { x: 100, y: 100 },
 	ownerVisibility: auraVisibilityDefaults,
 	nonOwnerVisibility: auraVisibilityDefaults,

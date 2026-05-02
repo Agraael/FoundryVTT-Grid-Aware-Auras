@@ -9,6 +9,7 @@
  * @typedef {Object} AuraGeometry
  * @property {(token: Token, options?: AuraGeometryIsInsideOptions) => boolean} isInside Tests if a token is inside this geometry.
  * @property {() => Generator<import("../../../utils/pixi-utils.mjs").PathCommand, void, never>} getPath Draws this geometry to the given PIXI Graphics instance.
+ * @property {readonly PIXI.Rectangle} bounds Bounding box for the geometry.
  */
 
 export * from "./gridless-aura-geometry.mjs";

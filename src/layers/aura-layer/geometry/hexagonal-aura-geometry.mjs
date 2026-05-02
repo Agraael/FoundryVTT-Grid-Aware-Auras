@@ -47,6 +47,11 @@ export class HexagonalAuraGeometry {
 		this.#gridSize = gridSize;
 	}
 
+	get bounds() {
+		const { top, right, bottom, left } = this.#boundingBox;
+		return new PIXI.Rectangle(left, top, right - left, bottom - top);
+	}
+
 	/**
 	 * @param {Token} token
 	 * @param {AuraGeometryIsInsideOptions} options

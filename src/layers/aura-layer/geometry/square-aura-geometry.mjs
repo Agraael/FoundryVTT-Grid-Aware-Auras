@@ -38,6 +38,11 @@ export class SquareAuraGeometry {
 		this.#points = generateSquareAuraBorder(width, height, radius, mode).map(({ x, y }) => ({ x: x * gridSize, y: y * gridSize }));
 	}
 
+	get bounds() {
+		const { width: w, height: h, radius: r, gridSize: s } = this.#config;
+		return new PIXI.Rectangle(-r * s, -r * s, (w + (r * 2)) * s, (h + (r * 2)) * s);
+	}
+
 	/**
 	 * @param {Token} token
 	 * @param {AuraGeometryIsInsideOptions} options

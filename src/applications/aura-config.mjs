@@ -325,6 +325,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 						<input type="number" name="lineGapSize" placeholder="Gap" .value=${this.#aura.lineGapSize} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
 					</div>
 				</div>
+
+				<div class="form-group">
+					<label>Dash Animation <span class="units">(px/s)</span></label>
+					<div class="form-fields">
+						<input type="number" name="lineDashOffsetAnimation" placeholder="Dash" .value=${this.#aura.lineDashOffsetAnimation} required min="0" step="1" ?disabled=${this.#disabled || !isDashed}>
+					</div>
+				</div>
 			</div>
 		`;
 	};
@@ -394,13 +401,38 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
+				<div class=${classMap({ "form-group": true, "hidden": !!this.#aura.fillTextureOffsetAnimation })}>
 					<label>Texture Offset <span class="units">(px)</span></label>
 					<div class="form-fields">
 						<input type="number" name="fillTextureOffset.x" placeholder="x" .value=${this.#aura.fillTextureOffset.x} required ?disabled=${this.#disabled || !isPattern}>
 						<input type="number" name="fillTextureOffset.y" placeholder="y" .value=${this.#aura.fillTextureOffset.y} required ?disabled=${this.#disabled || !isPattern}>
+						<button
+							type="button"
+							data-tooltip="Enable animation"
+							@click=${() => this.#setAuraProperty("fillTextureOffsetAnimation", { x: 0, y: 0 })}
+						>
+							<i class="fas fa-sparkles m-0"></i>
+						</button>
 					</div>
 				</div>
+
+				${when(this.#aura.fillTextureOffsetAnimation, () => html`
+					<div class="form-group">
+						<label>Texture Animation <span class="units">(px/s)</span></label>
+						<div class="form-fields">
+							<input type="number" name="fillTextureOffsetAnimation.x" placeholder="x" .value=${this.#aura.fillTextureOffsetAnimation.x} required ?disabled=${this.#disabled || !isPattern}>
+							<input type="number" name="fillTextureOffsetAnimation.y" placeholder="y" .value=${this.#aura.fillTextureOffsetAnimation.y} required ?disabled=${this.#disabled || !isPattern}>
+							<button
+								type="button"
+								class="gaa-btn-active"
+								data-tooltip="Disable animation"
+								@click=${() => this.#setAuraProperty("fillTextureOffsetAnimation", null)}
+							>
+								<i class="fas fa-sparkles m-0"></i>
+							</button>
+						</div>
+					</div>
+				`)}
 
 				<div class="form-group">
 					<label>Texture Scale <span class="units">(%)</span></label>
