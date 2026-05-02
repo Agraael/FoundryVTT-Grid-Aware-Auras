@@ -8,6 +8,7 @@ import "./abstract-dropdown.css";
 export class AbstractDropdownElement extends LitElement {
 
 	static properties = {
+		disabled: { type: Boolean },
 		_isOpen: { state: true }
 	};
 
@@ -18,13 +19,17 @@ export class AbstractDropdownElement extends LitElement {
 
 	constructor() {
 		super();
+		this.disabled = false;
 		this._isOpen = false;
 	}
 
 	render() {
 		return html`
 			<div
-				class=${classMap({ "dropdown-button-fwl": true, "dropdown-button-open-fwl": this._isOpen })}
+				class=${classMap({
+					"dropdown-button-fwl": true,
+					"dropdown-button-fwl-disabled": this.disabled
+				})}
 				@mousedown=${() => this._isOpen = !this._isOpen}
 			>
 				${this._renderButton()}
@@ -52,7 +57,7 @@ export class AbstractDropdownElement extends LitElement {
 	}
 
 	#renderDropdownElement() {
-		if (!this._isOpen) {
+		if (!this._isOpen || this.disabled) {
 			this.#dropdownContainer?.remove();
 			this.#dropdownContainer = null;
 			return;

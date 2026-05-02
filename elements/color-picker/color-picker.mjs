@@ -242,4 +242,6 @@ class ColorPickerElement extends LitElement {
 	}
 }
 
-customElements.define(elementName, ColorPickerElement);
+if (!customElements.get(elementName)) {
+	customElements.define(elementName, ColorPickerElement);
+}

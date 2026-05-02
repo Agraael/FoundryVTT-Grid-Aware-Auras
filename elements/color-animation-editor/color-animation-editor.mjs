@@ -5,8 +5,9 @@ import { classMap } from "lit/directives/class-map.js";
 import { createRef, ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { easingFunctions } from "../../animation/easing-functions.mjs";
-import { getColorAnimationValue, premultiplyKeyframes } from "../../color/color-animation.mjs";
-import { extractRgb, unpremultiply } from "../../color/conversions.mjs";
+import { getColorAnimationValue } from "../../color/color-animation.mjs";
+import { extractRgb } from "../../color/conversions.mjs";
+import { styleColorAnimation } from "../../directives/style-color-animation.mjs";
 import { AbstractDropdownElement } from "../abstract-dropdown/abstract-dropdown.mjs";
 import "../color-picker/color-picker.mjs";
 import "./color-animation-editor.css";
@@ -72,7 +73,7 @@ class ColorAnimationEditorElement extends AbstractDropdownElement {
 		return html`
 			<div
 				class="color-animation-editor-fwl-preview-bar"
-				style=${backgroundColorAnimation(this.value, "--current-color")}
+				${styleColorAnimation(this.value, "--current-color")}
 			></div>
 		`;
 	}
@@ -323,77 +324,11 @@ class ColorAnimationEditorElement extends AbstractDropdownElement {
 	}
 }
 
-customElements.define(elementName, ColorAnimationEditorElement);
-
-
-/**
- * Directive for animating the background of the color preview shown on the dropdown button. Using a directive to do a
- * JS animation instead of a CSS animation means that the tracker can be synced up with the tracker in the dropdown.
- */
-class BackgroundColorAnimationDirective extends AsyncDirective {
-
-	/** @type {ColorAnimation} */
-	#animation;
-
-	/** @type {ColorAnimation["keyframes"]} */
-	#premultKeyframes;
-
-	/** @type {string} */
-	#cssPropertyName;
-
-	/** @type {number | null} */
-	#animationRequestId = null;
-
-	/**
-	 * @param {ColorAnimation} animation
-	 * @param {string} [cssPropertyName]
-	 */
-	render(animation, cssPropertyName = "background") {
-		this.#animation = animation;
-		this.#premultKeyframes = premultiplyKeyframes(animation.keyframes);
-		this.#cssPropertyName = cssPropertyName;
-
-		if (this.#animationRequestId) cancelAnimationFrame(this.#animationRequestId);
-		this.#animationRequestId = requestAnimationFrame(this.#animate);
-	}
-
-	reconnected() {
-		if (this.#animationRequestId) cancelAnimationFrame(this.#animationRequestId);
-		this.#animationRequestId = requestAnimationFrame(this.#animate);
-	}
-
-	disconnected() {
-		if (this.#animationRequestId) cancelAnimationFrame(this.#animationRequestId);
-		this.#animationRequestId = null;
-	}
-
-	#animate = () => {
-		if (!this.isConnected || this.#animation.duration <= 0 || this.#animation.keyframes.length === 0) return;
-
-		let { color, alpha } = getColorAnimationValue(
-			this.#premultKeyframes,
-			this.#animation.duration,
-			this.#animation.easingFunc,
-			Date.now()
-		);
-
-		color = unpremultiply(color, alpha);
-		const r = (color >> 16) & 255;
-		const g = (color >> 8) & 255;
-		const b = color & 255;
-
-		this.setValue(`${this.#cssPropertyName}: rgba(${r} ${g} ${b} / ${Math.round(alpha * 10000) / 100}%)`);
-
-		this.#animationRequestId = requestAnimationFrame(this.#animate);
-	};
+if (!customElements.get(elementName)) {
+	customElements.define(elementName, ColorAnimationEditorElement);
 }
 
-export const backgroundColorAnimation = directive(BackgroundColorAnimationDirective);
 
-/**
- * Directive for the preview bar tracker indicator. Using a directive to do a JS animation instead of a CSS animation
- * means that the tracker can be synced up with the preview color box.
- */
 class PreviewBarTrackerAnimationDirective extends AsyncDirective {
 
 	/** @type {ColorAnimation} */
@@ -434,4 +369,8 @@ class PreviewBarTrackerAnimationDirective extends AsyncDirective {
 	};
 }
 
-export const previewBarTrackerAnimation = directive(PreviewBarTrackerAnimationDirective);
+/**
+ * Directive for the preview bar tracker indicator. Using a directive to do a JS animation instead of a CSS animation
+ * means that the tracker can be synced up with the preview color box.
+ */
+const previewBarTrackerAnimation = directive(PreviewBarTrackerAnimationDirective);
