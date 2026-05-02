@@ -7,6 +7,8 @@ import "../components/multi-select.mjs";
 import { LINE_TYPES } from "../consts.mjs";
 import { createAura, exportAuraJson, getAura, importAuraJson } from "../data/aura.mjs";
 import { getPresets, savePresets } from "../data/preset.mjs";
+import { toCssRgbString } from "../shared/color/conversions.mjs";
+import { styleColorAnimation } from "../shared/directives/style-color-animation.mjs";
 import { AuraConfigApplication } from "./aura-config.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -77,12 +79,18 @@ export class PresetManagerApplication extends ApplicationV2 {
 								${preset.config.radius}
 							</td>
 							<td class="text-center" style="width: 58px">
-								${when(preset.config.lineType !== LINE_TYPES.NONE,
-									() => html`<input type="color" value="${preset.config.lineColor}" disabled>`)}
+								${when(preset.config.lineType !== LINE_TYPES.NONE, () => when(
+									preset.config.lineColorAnimation,
+									a => html`<div class="gaa-color-block" ${styleColorAnimation(a, "--color")}></div>`,
+									() => html`<div class="gaa-color-block" style=${`--color: ${toCssRgbString(preset.config.lineColor, preset.config.lineOpacity)}`}></div>`
+								))}
 							</td>
 							<td class="text-center" style="width: 58px">
-								${when(preset.config.fillType !== CONST.DRAWING_FILL_TYPES.NONE,
-									() => html`<input type="color" value="${preset.config.fillColor}" disabled>`)}
+								${when(preset.config.fillType !== CONST.DRAWING_FILL_TYPES.NONE, () => when(
+									preset.config.fillColorAnimation,
+									a => html`<div class="gaa-color-block" ${styleColorAnimation(a, "--color")}></div>`,
+									() => html`<div class="gaa-color-block" style=${`--color: ${toCssRgbString(preset.config.fillColor, preset.config.fillOpacity)}`}></div>`
+								))}
 							</td>
 							<td>
 								<gaa-multi-select

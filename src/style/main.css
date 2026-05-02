@@ -502,6 +502,21 @@ gaa-data-path-autocomplete {
 	overflow-y: auto;
 }
 
+/* ----------- */
+/* Color block */
+/* ----------- */
+.gaa-color-block {
+	--color: rgb(255 0 0 / 100%);
+	display: inline-block;
+	width: 42px;
+	height: 18px;
+	border: 1px solid currentColor;
+	border-radius: 1px;
+	background:
+		linear-gradient(var(--color)),
+		url(./assets/checkerboard.svg) 0 0 / 8px 8px;
+}
+
 /* ------- */
 /* Utility */
 /* ------- */

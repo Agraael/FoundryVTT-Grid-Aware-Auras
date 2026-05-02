@@ -6,6 +6,8 @@ import { PresetManagerApplication } from "../applications/preset-manager.mjs";
 import { ENABLE_EFFECT_AUTOMATION_SETTING, ENABLE_MACRO_AUTOMATION_SETTING, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { calculateAuraRadius, createAura, exportAuraJson, getAura } from "../data/aura.mjs";
 import { getPresetsRaw, saveAuraAsNewPreset } from "../data/preset.mjs";
+import { toCssRgbString } from "../shared/color/conversions.mjs";
+import { styleColorAnimation } from "../shared/directives/style-color-animation.mjs";
 import { ContextMenu } from "./context-menu.mjs";
 
 export const elementName = "gaa-aura-table";
@@ -151,12 +153,18 @@ export class AuraTable extends LitElement {
 					${when(isCalculateRadius && typeof calculatedRadius === "number", () => html`<i class="fas fa-link cursor-help" data-tooltip=${aura.radius}></i>`)}
 				</td>
 				<td class="text-center" style="width: 58px">
-					${when(aura.lineType !== LINE_TYPES.NONE,
-						() => html`<input type="color" value="${aura.lineColor}" disabled>`)}
+					${when(aura.lineType !== LINE_TYPES.NONE, () => when(
+						aura.lineColorAnimation,
+						a => html`<div class="gaa-color-block" ${styleColorAnimation(a, "--color")}></div>`,
+						() => html`<div class="gaa-color-block" style=${`--color: ${toCssRgbString(aura.lineColor, aura.lineOpacity)}`}></div>`
+					))}
 				</td>
 				<td class="text-center" style="width: 58px">
-					${when(aura.fillType !== CONST.DRAWING_FILL_TYPES.NONE,
-						() => html`<input type="color" value="${aura.fillColor}" disabled>`)}
+					${when(aura.fillType !== CONST.DRAWING_FILL_TYPES.NONE, () => when(
+						aura.fillColorAnimation,
+						a => html`<div class="gaa-color-block" ${styleColorAnimation(a, "--color")}></div>`,
+						() => html`<div class="gaa-color-block" style=${`--color: ${toCssRgbString(aura.fillColor, aura.fillOpacity)}`}></div>`
+					))}
 				</td>
 				<td class="text-center" style="width: 45px">
 					<a @click=${e => this.#openContextMenu(aura, e)} style="width: 100%; display: inline-block;">
