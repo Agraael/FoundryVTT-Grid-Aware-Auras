@@ -324,7 +324,9 @@ class ColorAnimationEditorElement extends AbstractDropdownElement {
 	}
 }
 
-customElements.define(elementName, ColorAnimationEditorElement);
+if (!customElements.get(elementName)) {
+	customElements.define(elementName, ColorAnimationEditorElement);
+}
 
 
 class PreviewBarTrackerAnimationDirective extends AsyncDirective {
