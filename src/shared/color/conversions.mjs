@@ -152,3 +152,13 @@ export function premultiply(color, alpha) {
 export function unpremultiply(color, alpha) {
 	return premultiply(color, 1 / alpha);
 }
+
+/**
+ * Converts a color into it's CSS `rgb()` equivalent.
+ * @param {number | string | RGBA} color Number, hexadecimal string, or RGBA object.
+ * @param {number} [alpha] Alpha in range 0-1.
+ */
+export function toCssRgbString(color, alpha) {
+	const { r = 0, g = 0, b = 0, a = 255 } = (typeof color === "string" ? parseHexString(color) : typeof color === "number" ? extractRgb(color) : color) ?? {};
+	return `rgb(${r} ${g} ${b} / ${Math.round(100 * (alpha ?? (a / 255)))}%)`;
+}
