@@ -143,6 +143,7 @@ export class PolygonGraphic extends PIXI.Container {
 			const { x: xScale, y: yScale } = style.fillTextureScale ?? { x: 100, y: 100 };
 			s.tileScale.set(xScale / 100, yScale / 100);
 
+			g.clear();
 			g.beginFill(0x000000, 1);
 			drawComplexPath(g, geometry);
 			for (const hole of holeGeometries) {
@@ -153,6 +154,7 @@ export class PolygonGraphic extends PIXI.Container {
 
 		} else if (hasFill) {
 			const g = this.#fillGraphics ??= this.addChild(new PIXI.Graphics());
+			g.clear();
 
 			if (style.fillType === CONST.DRAWING_FILL_TYPES.PATTERN && style.fillTexture) {
 				const { x: xOffset, y: yOffset } = style.fillTextureOffset ?? { x: 0, y: 0 };

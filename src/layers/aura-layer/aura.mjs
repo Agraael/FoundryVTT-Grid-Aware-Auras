@@ -26,6 +26,16 @@ export class Aura {
 
 	#isVisible = false;
 
+	/** Hide this aura while UnifiedAuraGroup renders the merged shape, to avoid double-drawing. */
+	#suppressed = false;
+
+	/**
+	 * THT terrain blockers from the last redraw. Empty when elevationAware is off or no terrain
+	 * is in range. UnifiedAuraGroup reads this to clip the merged shape against the same terrain.
+	 * @type {Array<any>}
+	 */
+	#blockers = [];
+
 	/** @type {PolygonGraphic} */
 	#graphics;
 
@@ -67,6 +77,68 @@ export class Aura {
 
 	get innerGeometry() {
 		return this.#innerGeometry;
+	}
+
+	get isVisible() {
+		return this.#isVisible;
+	}
+
+	/** THT terrain blockers from the last redraw. Used by UnifiedAuraGroup to clip the merged shape. */
+	get blockers() {
+		return this.#blockers;
+	}
+
+	set suppressed(value) {
+		this.#suppressed = !!value;
+		this.updateVisibility();
+	}
+
+	/**
+	 * Outer path in world coords, before any elevationAware terrain clip. Two clipped auras of
+	 * the same group can still merge visually because the union runs on the raw shapes.
+	 * @yields {{ type: string; x: number; y: number; tx?: number; ty?: number; r?: number }}
+	 */
+	*getWorldPath() {
+		if (!this.#geometry) return;
+		const ox = this.#graphics.x;
+		const oy = this.#graphics.y;
+		for (const cmd of this.#geometry.getPath()) {
+			if (cmd.type === "a")
+				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
+			else
+				yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+		}
+	}
+
+	/**
+	 * Inner (hole) path in world coords. Empty when there is no inner radius.
+	 * @yields {{ type: string; x: number; y: number; tx?: number; ty?: number; r?: number }}
+	 */
+	*getInnerWorldPath() {
+		if (!this.#innerGeometry) return;
+		const ox = this.#graphics.x;
+		const oy = this.#graphics.y;
+		for (const cmd of this.#innerGeometry.getPath()) {
+			if (cmd.type === "a")
+				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
+			else
+				yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+		}
+	}
+
+	/**
+	 * Hit-test for UnifiedAuraGroup outline merging. Uses the raw geometry, not the terrain clip.
+	 * @param {number} wx
+	 * @param {number} wy
+	 */
+	isWorldPointInside(wx, wy) {
+		if (!this.#geometry?._isPointInside) return false;
+		const lx = wx - this.#graphics.x;
+		const ly = wy - this.#graphics.y;
+		if (!this.#geometry._isPointInside(lx, ly)) return false;
+		// Inside the hole = not filled.
+		if (this.#innerGeometry?._isPointInside?.(lx, ly)) return false;
+		return true;
 	}
 
 	/**
@@ -127,15 +199,23 @@ export class Aura {
 			|| this.#graphics.y !== previousY
 			|| this.graphics.elevation !== previousElevation;
 
+		// During drag, updatePosition fires every frame but #redraw only runs on doc changes.
+		// Re-trigger #redraw for elevationAware auras so the terrain clip follows the preview.
+		if (hasChanged && this.#config?.elevationAware && this.#geometry && typeof this.#radius === "number" && this.#radius >= 0) {
+			const { width, height, hexagonalShape } = this.#token.document;
+			this.#redraw(width, height, this.#radius, this.#innerRadius, hexagonalShape);
+		}
+
 		return hasChanged;
 	}
 
 	/** @returns {boolean} `true` if the visibility was changed, `false` if it has not changed. */
 	updateVisibility() {
-		// Transition opacity
+		// Suppressed auras still return isVisible=true so UnifiedAuraGroup (which filters by
+		// isVisible) keeps them in the union. Only the alpha hides them while the union renders.
 		const wasVisible = this.#isVisible;
 		this.#isVisible = this.#getVisibility();
-		this.#graphics.alpha = this.#isVisible ? 1 : 0;
+		this.#graphics.alpha = (this.#isVisible && !this.#suppressed) ? 1 : 0;
 		return this.#isVisible !== wasVisible;
 	}
 
@@ -217,9 +297,10 @@ export class Aura {
 		let geometryPath = [...this.#geometry.getPath()];
 		const holeGeometries = this.#innerGeometry ? [[...this.#innerGeometry.getPath()]] : [];
 
-		// Elevation-aware: cull aura path against THT terrain blockers when enabled and THT is active.
-		// clipAuraAgainstTerrain returns the aura clipped against any blocking terrain shapes; multiple
-		// disjoint outers are concatenated into a single multi-subpath geometry.
+		// elevationAware: cull this aura's local rendering against THT terrain.
+		// getWorldPath stays unclipped so UnifiedAuraGroup can union same-name auras even when
+		// each is locally culled. The blockers are exposed so the merged shape uses the same set.
+		this.#blockers = [];
 		if (auraConfig.elevationAware) {
 			const innerPath = this.#innerGeometry ? [...this.#innerGeometry.getPath()] : null;
 			const originTopLeft = { x: this.#graphics.x, y: this.#graphics.y };
@@ -228,6 +309,7 @@ export class Aura {
 				geometryPath = clipped.outers.flat();
 				holeGeometries.length = 0;
 				for (const hole of clipped.holes) holeGeometries.push(hole);
+				this.#blockers = clipped.blockers ?? [];
 			}
 		}
 
@@ -336,7 +418,6 @@ export class Aura {
 	 * Determines whether this aura should be visible, based on it's config and assigned token.
 	 */
 	#getVisibility() {
-		// If token is hidden or set as invisible in config, then it is definitely not visible
 		if (!this.#token.visible || this.#token.hasPreview || !this.#config.enabled) {
 			return false;
 		}

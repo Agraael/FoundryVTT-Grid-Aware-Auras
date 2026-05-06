@@ -49,7 +49,14 @@ function _walkPolyTree(node, outers, holes) {
 	}
 }
 
-function _computeMergedBoundary(worldPaths, innerWorldPaths) {
+/**
+ * @param {PathCommand[][]} worldPaths
+ * @param {PathCommand[][]} innerWorldPaths
+ * @param {Array<{ polygon?: { vertices?: Array<{ x: number; y: number }> } }>} [blockerShapes]
+ *   THT terrain blockers from the participating auras. When set, the merged union gets
+ *   differenced against them so the unified shape respects elevationAware culling.
+ */
+function _computeMergedBoundary(worldPaths, innerWorldPaths, blockerShapes = []) {
 	if (typeof ClipperLib === "undefined") return null;
 	const subj = [];
 	for (const wp of worldPaths) subj.push(..._pathToClipperPolys(wp));
@@ -57,12 +64,38 @@ function _computeMergedBoundary(worldPaths, innerWorldPaths) {
 	const innerClip = [];
 	for (const ip of innerWorldPaths) innerClip.push(..._pathToClipperPolys(ip));
 
+	const blockerClip = [];
+	for (const s of blockerShapes) {
+		const verts = s?.polygon?.vertices ?? [];
+		if (verts.length < 3) continue;
+		const poly = verts.map(v => ({ X: Math.round(v.x * _CLIPPER_SCALE), Y: Math.round(v.y * _CLIPPER_SCALE) }));
+		blockerClip.push(poly);
+	}
+
 	try {
 		const cprUnion = new ClipperLib.Clipper();
 		cprUnion.AddPaths(subj, ClipperLib.PolyType.ptSubject, true);
-		const unionResult = new ClipperLib.Paths();
+		let unionResult = new ClipperLib.Paths();
 		cprUnion.Execute(ClipperLib.ClipType.ctUnion, unionResult,
 			ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+
+		// Cull the union against terrain, mirroring per-aura clipAuraAgainstTerrain.
+		// 1px inflate so the merged edge lines up with each individual aura's clip.
+		if (blockerClip.length) {
+			const co = new ClipperLib.ClipperOffset();
+			co.AddPaths(blockerClip, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+			const inflated = new ClipperLib.Paths();
+			co.Execute(inflated, _CLIPPER_SCALE);
+			const finalClip = inflated.length >= 1 ? inflated : blockerClip;
+
+			const cprBlock = new ClipperLib.Clipper();
+			cprBlock.AddPaths(unionResult, ClipperLib.PolyType.ptSubject, true);
+			cprBlock.AddPaths(finalClip, ClipperLib.PolyType.ptClip, true);
+			const blocked = new ClipperLib.Paths();
+			cprBlock.Execute(ClipperLib.ClipType.ctDifference, blocked,
+				ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+			unionResult = blocked;
+		}
 
 		const tree = new ClipperLib.PolyTree();
 		if (innerClip.length) {
@@ -422,7 +455,14 @@ export class UnifiedAuraGroup {
 		this.#boundaryPath = [];
 		this.#innerBoundaryPaths = [];
 
-		const merged = _computeMergedBoundary(worldPaths, innerWorldPaths);
+		// Dedupe blockers from all participating elevationAware auras.
+		const blockerSet = new Set();
+		for (const { aura } of entries) {
+			for (const b of aura.blockers ?? []) blockerSet.add(b);
+		}
+		const blockers = [...blockerSet];
+
+		const merged = _computeMergedBoundary(worldPaths, innerWorldPaths, blockers);
 		if (merged) {
 			for (const outer of merged.outers)
 				this.#boundaryPath.push(...outer);
