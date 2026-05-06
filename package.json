@@ -1,0 +1,20 @@
+{
+	"name": "foundryvtt-grid-aware-auras",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsdown -w",
+		"build": "NODE_ENV=production tsdown",
+		"lint": "eslint -c eslint.config.mjs"
+	},
+	"dependencies": {
+		"lit": "^3.3.2"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.27.0",
+		"@stylistic/eslint-plugin-js": "^4.2.0",
+		"@tsdown/css": "^0.21.10",
+		"eslint": "^9.27.0",
+		"tsdown": "^0.21.10"
+	}
+}

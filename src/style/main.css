@@ -1,0 +1,497 @@
+/* ------------------ */
+/* Aura Config Window */
+/* ------------------ */
+.grid-aware-auras-aura-config {
+	display: grid !important;
+	grid-template:
+		"h h" min-content
+		"t c" 1fr
+		"f f" min-content
+		/ 160px 1fr;
+	position: relative;
+}
+
+.grid-aware-auras-aura-config .sheet-header {
+	grid-area: h;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid rgb(135 135 135 / 25%);
+}
+
+.grid-aware-auras-aura-config .gaa-vertical-tabs {
+	grid-area: t;
+}
+
+.grid-aware-auras-aura-config .sheet-content {
+	grid-area: c;
+	padding: 0.5rem 1rem 0.5rem 0;
+	overflow-y: scroll;
+}
+
+.grid-aware-auras-aura-config .sheet-footer {
+	grid-area: f;
+}
+
+.grid-aware-auras-aura-config .standard-form hr {
+	margin: 0.5rem 0;
+	border-top: none;
+	flex: 0 0 2px;
+}
+
+.grid-aware-auras-aura-config .gaa-popover {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+    justify-content: center;
+	background: rgba(0, 0, 0, 0.8);
+	backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.grid-aware-auras-aura-config .gaa-popover > .gaa-popover-content {
+	display: flex;
+	width: 480px;
+	max-height: calc(100% - 3rem);
+	padding: 1rem;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--background);
+}
+
+.grid-aware-auras-aura-config > .gaa-popover > .gaa-popover-content > * {
+	flex: 1 1 0;
+}
+
+.grid-aware-auras-aura-config .visibility-grid {
+	margin: 0 -0.625em;
+}
+
+.grid-aware-auras-aura-config .visibility-row {
+	display: grid;
+	grid-template-columns: 1fr repeat(2, 85px);
+	grid-template-rows: min-content min-content;
+	grid-template-areas:
+		"title owner nonowner"
+		"hint hint hint";
+	align-items: center;
+	padding: 4px 8px;
+}
+
+.grid-aware-auras-aura-config .visibility-row:nth-child(even) {
+	background-color: rgb(0 0 0 / 5%);
+}
+
+.grid-aware-auras-aura-config .visibility-row > .hint {
+	grid-area: hint;
+}
+
+.grid-aware-auras-aura-config .visibility-row > .title {
+	grid-area: title;
+	font-weight: bold;
+}
+
+.grid-aware-auras-aura-config .visibility-row > .owner {
+	grid-area: owner;
+	justify-self: center;
+}
+
+.grid-aware-auras-aura-config .visibility-row > .nonowner {
+	grid-area: nonowner;
+	justify-self: center;
+}
+
+/* Use a custom style to emulate disabled because we still want to include the inputs in the FormData */
+.grid-aware-auras-aura-config fieldset.disabled {
+	pointer-events: none;
+	opacity: 0.4;
+}
+
+.grid-aware-auras-aura-config .alert {
+	margin: 0;
+	padding: 4px;
+	font-size: var(--font-size-13);
+	color: rgb(255 175 0 / 60%);
+	background-color: rgb(255 175 0 / 20%);
+	border: 1px solid rgb(255 175 0 / 60%);
+	border-radius: 3px;
+}
+
+.grid-aware-auras-aura-config button.icon {
+	flex: 0 0 24px;
+	height: 24px;
+	width: 24px;
+	padding: 0;
+	font-size: var(--font-size-12);
+    line-height: 24px;
+}
+
+.grid-aware-auras-aura-config .automated-item-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.grid-aware-auras-aura-config .automated-item-list > li {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.5rem 0;
+	border-top: 1px solid transparent;
+	border-bottom: 1px solid transparent;
+	cursor: pointer;
+}
+
+.grid-aware-auras-aura-config .automated-item-list > li:hover {
+	border-color: rgb(135 135 135 / 25%);
+}
+
+.grid-aware-auras-aura-config .automated-item-list > li > :not(.menu-button) {
+	flex: 1 1 0;
+}
+
+.grid-aware-auras-aura-config .automated-item-list > li > .menu-button {
+	flex: 0 0 16px;
+	text-align: center;
+}
+
+.grid-aware-auras-aura-config .automated-item-list-create-button {
+	display: flex;
+	justify-content: center;
+	margin-top: 1rem;
+}
+
+.grid-aware-auras-aura-config .automated-item-list-create-button > button {
+	width: max-content;
+    padding: 0 2rem;
+}
+
+.grid-aware-auras-aura-config .standard-form .form-group > label {
+	/* Not sure why the labels seem to have such a large line height. */
+	--input-height: 1.25;
+}
+
+/* ---------- */
+/* Aura Table */
+/* ---------- */
+.grid-aware-auras-table {
+	margin: 0 !important;
+	border: none;
+	background: none;
+}
+.grid-aware-auras-table thead {
+	background: none;
+	border: none;
+	color: inherit;
+	text-shadow: none;
+}
+
+.grid-aware-auras-table td {
+	padding: 0.25em 0;
+}
+
+.grid-aware-auras-table-item-header {
+	display: flex;
+	align-items: center;
+}
+
+.grid-aware-auras-table-item-header > span {
+	flex: 0;
+	margin-right: 1rem;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+.grid-aware-auras-table-item-header > hr {
+	flex: 1;
+}
+
+.grid-aware-auras-import-export-dialog .dialog-form,
+.grid-aware-auras-import-export-dialog textarea {
+	height: 100%;
+}
+
+.grid-aware-auras-import-export-dialog .dialog-content {
+	flex: 1 1 0;
+}
+
+/* -------------------------------- */
+/* Aura Target Custom Filter Config */
+/* -------------------------------- */
+#gaa-custom-aura-target-filter-config .filter-list {
+	flex-grow: 1;
+	overflow-y: auto;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item {
+	display: grid;
+	grid-template:
+		"name delete" min-content
+		"body delete" min-content
+		/ 1fr min-content;
+	gap: 0.5rem;
+	padding: 0.5rem;
+	border: 1px solid var(--color-border-dark-4);
+	border-radius: 4px;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item:not(:last-child) {
+	margin-bottom: 1rem;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .name {
+	grid-area: name;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body {
+	grid-area: body;
+	padding: 1rem;
+	border: 1px solid var(--color-cool-4);
+    border-radius: 4px;
+	font-family: var(--font-monospace);
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body.is-invalid {
+	border-color: var(--color-level-error);
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body span {
+	opacity: 0.6;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body textarea {
+	min-height: auto;
+	resize: vertical;
+	field-sizing: content;
+	padding: 0;
+	padding-left: 1rem;
+	border: none;
+	border-radius: 0;
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body.is-invalid textarea {
+	color: var(--color-level-error);
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .body .error {
+	margin-bottom: 0;
+	color: var(--color-level-error);
+}
+
+#gaa-custom-aura-target-filter-config .filter-item .delete {
+	grid-area: delete;
+	align-self: center;
+}
+
+/* ------------- */
+/* Vertical tabs */
+/* ------------- */
+.gaa-vertical-tabs {
+	display: flex;
+	flex-direction: column;
+	padding-right: 1rem;
+	border-right: 4px double rgb(135 135 135 / 25%);
+}
+
+.gaa-vertical-tabs > a {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 0.25rem;
+	padding: 0.3rem;
+	border-top: 1px solid transparent;
+	border-bottom: 1px solid transparent;
+}
+
+.gaa-vertical-tabs > a > .gaa-vertical-tabs-icon {
+	width: 18px;
+	text-align: center;
+}
+
+.gaa-vertical-tabs > a:hover {
+	border-color: rgb(135 135 135 / 25%);
+}
+
+.gaa-vertical-tabs > a.active {
+	border-color: var(--color-border-highlight);
+}
+
+/* --------------------- */
+/* Data path autocomplete */
+/* --------------------- */
+gaa-data-path-autocomplete {
+	position: relative;
+}
+
+.gaa-data-path-autocomplete-dropdown {
+	position: absolute;
+	z-index: var(--z-index-tooltip);
+	width: max-content;
+}
+
+.gaa-data-path-autocomplete-dropdown > menu {
+	max-width: unset;
+	max-height: 208px;
+	overflow-y: auto;
+}
+
+/* ----------- */
+/* Color block */
+/* ----------- */
+.gaa-color-block {
+	--color: rgb(255 0 0 / 100%);
+	display: inline-block;
+	width: 42px;
+	height: 18px;
+	border: 1px solid currentColor;
+	border-radius: 1px;
+	background:
+		linear-gradient(var(--color)),
+		url(./assets/checkerboard.svg) 0 0 / 8px 8px;
+}
+
+/* ------- */
+/* Utility */
+/* ------- */
+.text-bold {
+	font-weight: bold;
+}
+
+.text-left {
+	text-align: left;
+}
+
+.text-center {
+	text-align: center;
+}
+
+.text-right {
+	text-align: right;
+}
+
+.hr-narrow {
+	border: none;
+	border-bottom: 1px solid var(--color-border-light-primary);
+}
+
+.cursor-help {
+	cursor: help;
+}
+
+.grid-aware-auras-aura-config .gaa-popover > .gaa-popover-content:has(.gaa-code-form) {
+	width: min(820px, 90vw);
+	max-height: calc(100% - 3rem);
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.gaa-code-form {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 100%;
+	min-width: 0;
+	flex: 1 1 auto !important;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.gaa-code-form .gaa-code-label {
+	font-weight: bold;
+}
+
+.gaa-code-form .gaa-code-hint {
+	margin: 0;
+}
+
+.gaa-code-form .gaa-code-buttons {
+	margin-top: 8px;
+	gap: 8px;
+}
+
+.gaa-code-form textarea.gaa-macro-code {
+	display: block;
+	width: 100%;
+	height: 280px;
+	min-height: 280px;
+	resize: vertical;
+	font-family: var(--font-mono, monospace);
+	font-size: 13px;
+	box-sizing: border-box;
+	flex: none;
+}
+
+.gaa-code-form .CodeMirror,
+.gaa-code-form .CodeMirror-wrap {
+	display: block !important;
+	visibility: visible !important;
+}
+
+.gaa-code-form .CodeMirror {
+	display: block !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	min-width: 0 !important;
+	height: 280px !important;
+	border: 1px solid #111;
+	font-family: var(--font-mono, monospace);
+	font-size: 13px;
+	box-sizing: border-box !important;
+	flex: none;
+}
+
+.gaa-code-form .CodeMirror-scroll {
+	overflow-x: scroll !important;
+	overflow-y: scroll !important;
+	margin-right: 0 !important;
+	padding-bottom: 0 !important;
+}
+
+/* CodeMirror 5 monokai theme, used when the _CodeMirror module is active. */
+.cm-s-monokai.CodeMirror { background: #272822; color: #f8f8f2; }
+.cm-s-monokai div.CodeMirror-selected { background: #49483E; }
+.cm-s-monokai .CodeMirror-line::selection,
+.cm-s-monokai .CodeMirror-line > span::selection,
+.cm-s-monokai .CodeMirror-line > span > span::selection { background: rgba(73, 72, 62, .99); }
+.cm-s-monokai .CodeMirror-line::-moz-selection,
+.cm-s-monokai .CodeMirror-line > span::-moz-selection,
+.cm-s-monokai .CodeMirror-line > span > span::-moz-selection { background: rgba(73, 72, 62, .99); }
+.cm-s-monokai .CodeMirror-gutters { background: #272822; border-right: 0px; }
+.cm-s-monokai .CodeMirror-guttermarker { color: white; }
+.cm-s-monokai .CodeMirror-guttermarker-subtle { color: #d0d0d0; }
+.cm-s-monokai .CodeMirror-linenumber { color: #d0d0d0; }
+.cm-s-monokai .CodeMirror-cursor { border-left: 1px solid #f8f8f0; }
+.cm-s-monokai span.cm-comment { color: #75715e; }
+.cm-s-monokai span.cm-atom { color: #ae81ff; }
+.cm-s-monokai span.cm-number { color: #ae81ff; }
+.cm-s-monokai span.cm-comment.cm-attribute { color: #97b757; }
+.cm-s-monokai span.cm-comment.cm-def { color: #bc9262; }
+.cm-s-monokai span.cm-comment.cm-tag { color: #bc6283; }
+.cm-s-monokai span.cm-comment.cm-type { color: #5998a6; }
+.cm-s-monokai span.cm-property,
+.cm-s-monokai span.cm-attribute { color: #a6e22e; }
+.cm-s-monokai span.cm-keyword { color: #f92672; }
+.cm-s-monokai span.cm-builtin { color: #66d9ef; }
+.cm-s-monokai span.cm-string { color: #e6db74; }
+.cm-s-monokai span.cm-variable { color: #f8f8f2; }
+.cm-s-monokai span.cm-variable-2 { color: #9effff; }
+.cm-s-monokai span.cm-variable-3,
+.cm-s-monokai span.cm-type { color: #66d9ef; }
+.cm-s-monokai span.cm-def { color: #fd971f; }
+.cm-s-monokai span.cm-bracket { color: #f8f8f2; }
+.cm-s-monokai span.cm-tag { color: #f92672; }
+.cm-s-monokai span.cm-header { color: #ae81ff; }
+.cm-s-monokai span.cm-link { color: #ae81ff; }
+.cm-s-monokai span.cm-error { background: #f92672; color: #f8f8f0; }
+.cm-s-monokai .CodeMirror-activeline-background { background: #373831; }
+.cm-s-monokai .CodeMirror-matchingbracket { text-decoration: underline; color: white !important; }
+
+.m-0 {
+	margin: 0 !important;
+}
+
+/* Calling it .gaa-btn-active as there's a high chance of a collision with just .active */
+button.gaa-btn-active {
+	background: var(--button-hover-background-color);
+	color: var(--button-hover-text-color);
+	box-shadow: 0 0 5px var(--color-shadow-primary);
+}
