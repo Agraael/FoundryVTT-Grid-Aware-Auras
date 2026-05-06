@@ -2,6 +2,7 @@
 import { ENABLE_MACRO_AUTOMATION_SETTING, MODULE_NAME } from "../consts.mjs";
 import { canTargetToken } from "../data/aura-target-filters.mjs";
 import { AuraLayer } from "../layers/aura-layer/aura-layer.mjs";
+import { runInlineCode } from "../utils/inline-code.mjs";
 import { warn } from "../utils/misc-utils.mjs";
 
 /**
@@ -160,6 +161,12 @@ export function onCombatRoundChange(isFirstRound, isLastRound, userId) {
  */
 function tryCallMacro(macroConfig, token, parent, aura, options) {
 	if (!canTargetToken(token, parent, aura, macroConfig.targetTokens)) return;
+
+	const actionType = macroConfig.actionType ?? "macro";
+	if (actionType === "code") {
+		runInlineCode(macroConfig, token, parent, aura, options);
+		return;
+	}
 
 	const macro = game.macros.get(macroConfig.macroId);
 	if (macro?.canExecute) {

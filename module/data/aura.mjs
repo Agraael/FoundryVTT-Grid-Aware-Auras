@@ -50,6 +50,7 @@ export const latestAuraConfigVersion = 2;
  * @property {string} terrainHeightTools.targetTokens ID of the filter to use to specify targetable tokens.
  * @property {boolean} terrainHeightTools.onlyWhenAltPressed Only show when Alt key is pressed
  * @property {boolean} terrainHeightTools.onlyWhenTargeted Only show when a token is targeted
+ * @property {boolean} elevationAware When true, cells whose line of sight from the source token is blocked by Terrain Height Tools terrain are culled from the aura. No-op when terrain-height-tools is not active.
  */
 /** @typedef {AuraConfig & { radiusCalculated: number; innerRadiusCalculated: number; }} AuraConfigWithRadius */
 /**
@@ -74,6 +75,8 @@ export const latestAuraConfigVersion = 2;
  * @property {string} macroId
  * @property {string} targetTokens ID of the filter to use to specify targetable tokens.
  * @property {MACRO_MODES} mode
+ * @property {"macro"|"code"} actionType
+ * @property {string} code
  */
 
 /**
@@ -274,7 +277,8 @@ export const auraDefaults = () => ({
 		targetTokens: "",
 		onlyWhenAltPressed: false,
 		onlyWhenTargeted: false
-	}
+	},
+	elevationAware: false
 });
 
 /** @type {() => EffectConfig} */
@@ -290,7 +294,9 @@ export const effectConfigDefaults = () => ({
 export const macroConfigDefaults = () => ({
 	macroId: null,
 	targetTokens: "ALL",
-	mode: "ENTER_LEAVE"
+	mode: "ENTER_LEAVE",
+	actionType: "macro",
+	code: ""
 });
 
 /** @type {() => SequencerEffectConfig} */

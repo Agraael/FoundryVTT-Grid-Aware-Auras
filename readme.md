@@ -1,4 +1,4 @@
-# Grid-Aware Auras — Personal Fork
+# Grid-Aware Auras (Lasossis's Fork)
 
 This is a personal fork of [Grid-Aware Auras](https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras) by **(Wibble199)**, maintained for my own use with additional features
 
@@ -49,6 +49,9 @@ https://github.com/Agraael/FoundryVTT-Grid-Aware-Auras/releases/latest/download/
 **THT tab enhancements**
 - `onlyWhenAltPressed`: Terrain Height Tools ruler only activates while Alt is held
 - `onlyWhenTargeted`: Terrain Height Tools ruler only activates when the token is targeted
+
+**Elevation-aware aura (THT)**
+- `elevationAware` toggle: clips the aura against solid terrain taller than the source's eye height. Affects both the visual and enter/leave checks.
 
 
 

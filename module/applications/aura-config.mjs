@@ -57,6 +57,9 @@ export class AuraConfigApplication extends ApplicationV2 {
 	/** @type {ReturnType<html> | null} */
 	#alternateContent = null;
 
+	/** @type {any} */
+	#cmInstance = null;
+
 	#tabs = [
 		{
 			name: "Geometry",
@@ -87,6 +90,11 @@ export class AuraConfigApplication extends ApplicationV2 {
 			name: l("GRIDAWAREAURAS.TabMacros"),
 			icon: "fas fa-scroll",
 			template: () => this.#automationMacroTab()
+		},
+		{
+			name: "Code",
+			icon: "fas fa-code",
+			template: () => this.#automationCodeTab()
 		},
 		{
 			name: l("GRIDAWAREAURAS.TabSequencer"),
@@ -434,6 +442,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</label>
 			</div>
 
+			<div class="form-group slim">
+				<label title="When Terrain Height Tools is active, cull aura cells whose line of sight from the source is blocked by terrain.">
+					<input type="checkbox" name="elevationAware" .checked=${this.#aura.elevationAware ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
+					Elevation Aware (THT)
+				</label>
+			</div>
+
 			<div class="form-group">
 				<label>${l("GRIDAWAREAURAS.KeyPressMode")}</label>
 				<div class="form-fields">
@@ -653,6 +668,10 @@ export class AuraConfigApplication extends ApplicationV2 {
 	#automationMacroTab = () => {
 		const macrosEnabled = game.settings.get(MODULE_NAME, ENABLE_MACRO_AUTOMATION_SETTING);
 
+		const items = this.#aura.macros
+			.map((macro, idx) => ({ macro, idx }))
+			.filter(({ macro }) => (macro.actionType ?? "macro") !== "code");
+
 		/** @type {(e: Event, macro: MacroConfig, idx: number) => void} */
 		const openItemContextMenu = (e, macro, idx) => ContextMenu.open(e, [
 			{
@@ -677,8 +696,8 @@ export class AuraConfigApplication extends ApplicationV2 {
 				<p class="alert" role="alert">Macro automation is not turned on for this world. GMs can configure this in the settings.</p>
 			`)}
 
-			${when(this.#aura.macros.length, () => html`<ul class="automated-item-list">
-				${this.#aura.macros.map((macro, idx) => html`
+			${when(items.length, () => html`<ul class="automated-item-list">
+				${items.map(({ macro, idx }) => html`
 					<li @contextmenu=${e => openItemContextMenu(e, macro, idx)}>
 						<div class="flexcol">
 							<span><strong>${game.macros.get(macro.macroId)?.name ?? l("None")}</strong></span>
@@ -697,7 +716,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 				`)}
 			</ul>`)}
 
-			${when(macrosEnabled && this.#aura.macros.length === 0, () => html`
+			${when(macrosEnabled && items.length === 0, () => html`
 				<p class="hint text-center">No macros configured.</p>
 			`)}
 
@@ -710,11 +729,140 @@ export class AuraConfigApplication extends ApplicationV2 {
 		`;
 	};
 
+	#automationCodeTab = () => {
+		const macrosEnabled = game.settings.get(MODULE_NAME, ENABLE_MACRO_AUTOMATION_SETTING);
+
+		const items = this.#aura.macros
+			.map((macro, idx) => ({ macro, idx }))
+			.filter(({ macro }) => (macro.actionType ?? "macro") === "code");
+
+		/** @type {(e: Event, macro: MacroConfig, idx: number) => void} */
+		const openItemContextMenu = (e, macro, idx) => ContextMenu.open(e, [
+			{
+				label: "Edit",
+				icon: "fas fa-edit",
+				onClick: () => this.#editMacro(idx)
+			},
+			{
+				label: "Duplicate",
+				icon: "fas fa-clone",
+				onClick: () => this.#createCodeTrigger(macro)
+			},
+			{
+				label: "Delete",
+				icon: "fas fa-trash",
+				onClick: () => this.#deleteMacro(idx)
+			}
+		]);
+
+		return html`
+			${when(!macrosEnabled, () => html`
+				<p class="alert" role="alert">Macro automation is not turned on for this world. GMs can configure this in the settings.</p>
+			`)}
+
+			${when(items.length, () => html`<ul class="automated-item-list">
+				${items.map(({ macro, idx }) => html`
+					<li @contextmenu=${e => openItemContextMenu(e, macro, idx)}>
+						<div class="flexcol">
+							<span><strong>${(macro.code?.split("\n")[0]?.trim().slice(0, 50)) || "(empty)"}</strong></span>
+							<span><em>${l(MACRO_MODES[macro.mode] ?? "")}</em></span>
+						</div>
+						${when(!this.#disabled && macrosEnabled, () => html`
+							<a class="menu-button" @click=${e => openItemContextMenu(e, macro, idx)}>
+								<i class="fas fa-ellipsis-vertical"></i>
+							</a>
+						`, () => html`
+							<a class="menu-button" @click=${() => this.#editMacro(idx)}>
+								<i class="fas fa-eye"></i>
+							</a>
+						`)}
+					</li>
+				`)}
+			</ul>`)}
+
+			${when(macrosEnabled && items.length === 0, () => html`
+				<p class="hint text-center">No code triggers configured.</p>
+			`)}
+
+			<div class="automated-item-list-create-button">
+				<button @click=${() => this.#createCodeTrigger()} ?disabled=${this.#disabled || !macrosEnabled}>
+					<i class="fas fa-plus"></i>
+					Create Code Trigger
+				</button>
+			</div>
+		`;
+	};
+
+	#createCodeTrigger = (source) => {
+		const merged = foundry.utils.mergeObject(macroConfigDefaults(), source ?? {});
+		merged.actionType = "code";
+		this.#aura.macros.push(merged);
+		this.#editMacro(this.#aura.macros.length - 1);
+	};
+
 	/** @param {number} macroIndex */
 	#macroEditNestedDialog = macroIndex => {
 		const editingMacro = this.#aura.macros[macroIndex];
+		const actionType = editingMacro.actionType ?? "macro";
 
 		const macroInputRef = createRef();
+
+		const onCmMount = el => {
+			if (el) this.#mountCodeMirror(el);
+			else this.#destroyCodeMirror();
+		};
+
+		const onSubmit = e => {
+			this.#cmInstance?.save();
+			this.#updateArrayItem(e, this.#aura.macros, macroIndex);
+			this.#destroyCodeMirror();
+		};
+
+		if (actionType === "code") {
+			return html`
+				<form class="gaa-code-form"
+					@submit=${onSubmit}>
+					<label class="gaa-code-label">Code</label>
+					<textarea name="code" class="gaa-macro-code" rows="20" ?disabled=${this.#disabled} ${ref(onCmMount)}>${editingMacro.code ?? ""}</textarea>
+					<p class="hint gaa-code-hint">Async function. Scope: <code>token, parent, aura, options, api</code>.</p>
+
+					<div class="form-group">
+						<label>Target Tokens</label>
+						<div class="form-fields">
+							<select name="targetTokens" ?disabled=${this.#disabled}>
+								${selectOptions(listAuraTargetFilters(), { selected: editingMacro.targetTokens })}
+							</select>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label>Trigger</label>
+						<div class="form-fields">
+							<select name="mode" ?disabled=${this.#disabled}>
+								${selectOptions(MACRO_MODES, { selected: editingMacro.mode })}
+							</select>
+						</div>
+					</div>
+
+					<input type="hidden" name="actionType" value="code">
+
+					<div class="flexrow gaa-code-buttons">
+						${when(this.#disabled, () => html`
+							<button type="button" @click=${() => { this.#destroyCodeMirror(); this.#setAlternateContent(null, { render: true }); }}>
+								${l("Close")}
+							</button>
+						`, () => html`
+							<button type="button" @click=${() => { this.#destroyCodeMirror(); this.#deleteMacro(macroIndex); }}>
+								<i class="fas fa-trash"></i> ${l("Delete")}
+							</button>
+							<button type="submit">
+								<i class="fas fa-check"></i> ${l("Confirm")}
+							</button>
+						`)}
+					</div>
+				</form>
+			`;
+		}
 
 		return html`
 			<form class="standard-form"
@@ -747,6 +895,8 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
+				<input type="hidden" name="actionType" value="macro">
+
 				<div class="flexrow">
 					${when(this.#disabled, () => html`
 						<button type="button" @click=${() => this.#setAlternateContent(null, { render: true })}>
@@ -764,6 +914,32 @@ export class AuraConfigApplication extends ApplicationV2 {
 			</form>
 		`;
 	};
+
+	#mountCodeMirror(textarea) {
+		const CM = /** @type {any} */ (globalThis).CodeMirror;
+		if (!CM || !textarea) return;
+		this.#destroyCodeMirror();
+		this.#cmInstance = CM.fromTextArea(textarea, {
+			mode: "javascript",
+			theme: "monokai",
+			lineNumbers: true,
+			lineWrapping: true,
+			indentUnit: 4,
+			tabSize: 4
+		});
+		const cm = this.#cmInstance;
+		requestAnimationFrame(() => { try { cm.refresh(); } catch { /* */ } });
+		setTimeout(() => { try { cm.refresh(); } catch { /* */ } }, 50);
+	}
+
+	#destroyCodeMirror() {
+		if (!this.#cmInstance) return;
+		try {
+			this.#cmInstance.save();
+			this.#cmInstance.toTextArea();
+		} catch { /* ignore */ }
+		this.#cmInstance = null;
+	}
 
 	#automationSequencerTab = () => {
 		// GAA's (lazy) usage of Sequencer doesn't work properly unless players can create effects

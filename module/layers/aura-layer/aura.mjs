@@ -5,6 +5,7 @@ import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
 import { isKeyPressed } from "../../main.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { drawComplexPath, drawDashedComplexPath } from "../../utils/pixi-utils.mjs";
+import { clipAuraAgainstTerrain, isPointInsideAnyBlocker } from "../../utils/elevation-aware.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
 
 /**
@@ -56,6 +57,12 @@ export class Aura {
 	 */
 	#innerGeometry = null;
 
+	/** @type {Array<any>} */
+	#blockers = [];
+
+	/** @type {{ outers: Array<Array<{type:string,x:number,y:number}>>, holes: Array<Array<{type:string,x:number,y:number}>> } | null} */
+	#cullCache = null;
+
 	/** @param {Token} token */
 	constructor(token) {
 		this.#token = token;
@@ -105,6 +112,12 @@ export class Aura {
 		if (!this.#geometry) return;
 		const ox = this.#graphics.x + this.#fillGraphics.position.x;
 		const oy = this.#graphics.y + this.#fillGraphics.position.y;
+		if (this.#cullCache) {
+			for (const outer of this.#cullCache.outers)
+				for (const cmd of outer)
+					yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+			return;
+		}
 		for (const cmd of this.#geometry.getPath()) {
 			if (cmd.type === "a") {
 				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
@@ -120,9 +133,15 @@ export class Aura {
 	 * @yields {import("../../utils/pixi-utils.mjs").PathCommand}
 	 */
 	*getInnerWorldPath() {
-		if (!this.#innerGeometry) return;
 		const ox = this.#graphics.x + this.#fillGraphics.position.x;
 		const oy = this.#graphics.y + this.#fillGraphics.position.y;
+		if (this.#cullCache) {
+			for (const hole of this.#cullCache.holes)
+				for (const cmd of hole)
+					yield { type: cmd.type, x: cmd.x + ox, y: cmd.y + oy };
+			return;
+		}
+		if (!this.#innerGeometry) return;
 		for (const cmd of this.#innerGeometry.getPath()) {
 			if (cmd.type === "a") {
 				yield { type: "a", x: cmd.x + ox, y: cmd.y + oy, tx: cmd.tx + ox, ty: cmd.ty + oy, r: cmd.r };
@@ -140,6 +159,11 @@ export class Aura {
 	 * @param {boolean} [options.force] Force a redraw, even if no aura properties have changed.
 	*/
 	update(config, { tokenDelta, force = false } = {}) {
+		const movedWithElevAware = config?.elevationAware && tokenDelta && (
+			"x" in tokenDelta ||
+			"y" in tokenDelta ||
+			"elevation" in tokenDelta
+		);
 		const shouldRedraw = force ||
 			this.#config !== config ||
 			this.#radius !== config.radiusCalculated ||
@@ -148,7 +172,8 @@ export class Aura {
 				"width" in tokenDelta ||
 				"height" in tokenDelta ||
 				"hexagonalShape" in tokenDelta
-			));
+			)) ||
+			movedWithElevAware;
 
 		this.#config = config;
 		this.#radius = config.radiusCalculated;
@@ -178,8 +203,14 @@ export class Aura {
 	get fillAnimationOffset() { return this.#fillAnimationOffset; }
 
 	updateVisibility() {
+		const wasVisible = this.#isVisible;
 		this.#isVisible = this.#getVisibility();
 		this.#graphics.alpha = (this.#isVisible && !this.#suppressed) ? 1 : 0;
+
+		if (this.#config?.elevationAware && this.#isVisible && !wasVisible && this.#radius != null) {
+			const { width, height, hexagonalShape } = this.#token.document;
+			this.#redraw(width, height, this.#radius, this.#innerRadius, hexagonalShape);
+		}
 
 		// Handle animation state - suppressed auras still tick to advance offset for the unified group
 		let shouldAnimate = this.#isVisible && (this.#config.animation === true || this.#config.fillAnimation === true);
@@ -271,8 +302,17 @@ export class Aura {
 		const auraOffset = this.#getOffset(sourceTokenPosition, useActualSourcePosition ? this.#token : this.#token.document);
 
 		// Token is inside the aura if it is partially inside the outer geometry and not totally inside the inner geometry.
-		return this.#geometry.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "partial" })
+		const baseInside = this.#geometry.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "partial" })
 			&& !this.#innerGeometry?.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "total" });
+		if (!baseInside) return false;
+
+		if (this.#config?.elevationAware && this.#blockers.length) {
+			const tx = (targetTokenPosition?.x ?? targetToken.document.x) + (targetToken.document.width * canvas.grid.size) / 2;
+			const ty = (targetTokenPosition?.y ?? targetToken.document.y) + (targetToken.document.height * canvas.grid.size) / 2;
+			if (isPointInsideAnyBlocker(tx, ty, this.#blockers)) return false;
+		}
+
+		return true;
 	}
 
 	destroy() {
@@ -288,6 +328,7 @@ export class Aura {
 	 * @param {number} hexagonalShape
 	 */
 	async #redraw(width, height, radius, innerRadius, hexagonalShape) {
+		if (this.#graphics?.destroyed || this.#fillGraphics?.destroyed) return;
 		const auraConfig = { ...auraDefaults(), ...this.#config };
 
 		// If there is a positional offset (i.e. aura is non-central), then use 0 as the effective token width/height.
@@ -357,6 +398,7 @@ export class Aura {
 			? await loadTexture(auraConfig.fillTexture)
 			: null;
 
+		if (this.#graphics?.destroyed || this.#fillGraphics?.destroyed) return;
 		this.#fillGraphics.clear();
 		this.#lineGraphics.clear();
 
@@ -370,16 +412,53 @@ export class Aura {
 		}
 
 		this.#configureFillStyle(fillConfig);
-		drawComplexPath(this.#fillGraphics, this.#geometry.getPath());
-		if (this.#innerGeometry) {
-			this.#fillGraphics.beginHole();
-			drawComplexPath(this.#fillGraphics, this.#innerGeometry.getPath());
-			this.#fillGraphics.endHole();
+
+		let cullResult = null;
+		this.#blockers = [];
+		this.#cullCache = null;
+		if (auraConfig.elevationAware) {
+			const tokenDoc = this.#token.document;
+			const tokenW = (tokenDoc.width ?? 1) * canvas.grid.size;
+			const tokenH = (tokenDoc.height ?? 1) * canvas.grid.size;
+			const originTopLeft = {
+				x: this.#graphics.x + this.#fillGraphics.position.x,
+				y: this.#graphics.y + this.#fillGraphics.position.y
+			};
+			const sourceCenter = {
+				x: this.#graphics.x + tokenW / 2,
+				y: this.#graphics.y + tokenH / 2
+			};
+			const innerPath = this.#innerGeometry ? [...this.#innerGeometry.getPath()] : null;
+			cullResult = clipAuraAgainstTerrain(this.#geometry.getPath(), this.#token, originTopLeft, radius, sourceCenter, innerPath);
+			if (cullResult) {
+				this.#blockers = cullResult.blockers ?? [];
+				this.#cullCache = { outers: cullResult.outers, holes: cullResult.holes };
+			}
+		}
+
+		if (cullResult) {
+			for (const outer of cullResult.outers)
+				drawComplexPath(this.#fillGraphics, outer);
+			for (const hole of cullResult.holes) {
+				this.#fillGraphics.beginHole();
+				drawComplexPath(this.#fillGraphics, hole);
+				this.#fillGraphics.endHole();
+			}
+		} else {
+			drawComplexPath(this.#fillGraphics, this.#geometry.getPath());
+			if (this.#innerGeometry) {
+				this.#fillGraphics.beginHole();
+				drawComplexPath(this.#fillGraphics, this.#innerGeometry.getPath());
+				this.#fillGraphics.endHole();
+			}
 		}
 		this.#fillGraphics.endFill();
 
 		// 2. Borders
 		this.#configureLineStyle(auraConfig);
+		const linePaths = cullResult
+			? [...cullResult.outers, ...cullResult.holes]
+			: [this.#geometry.getPath(), ...(this.#innerGeometry ? [this.#innerGeometry.getPath()] : [])];
 		if (auraConfig.lineType === LINE_TYPES.DASHED) {
 			const isScrolling = auraConfig.animation && (auraConfig.animationType ?? "scroll") === "scroll";
 			const dashConfig = {
@@ -387,13 +466,11 @@ export class Aura {
 				gapSize: auraConfig.lineGapSize,
 				offset: isScrolling ? this.#animationOffset : 0
 			};
-			drawDashedComplexPath(this.#lineGraphics, this.#geometry.getPath(), dashConfig);
-			if (this.#innerGeometry)
-				drawDashedComplexPath(this.#lineGraphics, this.#innerGeometry.getPath(), dashConfig);
+			for (const lp of linePaths)
+				drawDashedComplexPath(this.#lineGraphics, lp, dashConfig);
 		} else if (auraConfig.lineType === LINE_TYPES.SOLID) {
-			drawComplexPath(this.#lineGraphics, this.#geometry.getPath());
-			if (this.#innerGeometry)
-				drawComplexPath(this.#lineGraphics, this.#innerGeometry.getPath());
+			for (const lp of linePaths)
+				drawComplexPath(this.#lineGraphics, lp);
 		}
 
 		return;

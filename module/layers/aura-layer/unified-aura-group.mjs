@@ -9,6 +9,84 @@ import { getAuraParent } from "./aura-layer.mjs";
  * @typedef {{ token: Token; aura: Aura; }} AuraEntry
  */
 
+const _CLIPPER_SCALE = 100;
+
+function _pathToClipperPolys(path) {
+	const polys = [];
+	let current = null;
+	for (const cmd of path) {
+		if (cmd.type === "m") {
+			if (current && current.length >= 3) polys.push(current);
+			current = [{ X: Math.round(cmd.x * _CLIPPER_SCALE), Y: Math.round(cmd.y * _CLIPPER_SCALE) }];
+		} else if ((cmd.type === "l" || cmd.type === "a") && current) {
+			current.push({ X: Math.round(cmd.x * _CLIPPER_SCALE), Y: Math.round(cmd.y * _CLIPPER_SCALE) });
+		}
+	}
+	if (current && current.length >= 3) polys.push(current);
+	return polys;
+}
+
+function _clipperPolyToPath(poly) {
+	const out = [];
+	if (!poly.length) return out;
+	out.push({ type: "m", x: poly[0].X / _CLIPPER_SCALE, y: poly[0].Y / _CLIPPER_SCALE });
+	for (let i = 1; i < poly.length; i++) {
+		out.push({ type: "l", x: poly[i].X / _CLIPPER_SCALE, y: poly[i].Y / _CLIPPER_SCALE });
+	}
+	out.push({ type: "l", x: poly[0].X / _CLIPPER_SCALE, y: poly[0].Y / _CLIPPER_SCALE });
+	return out;
+}
+
+function _walkPolyTree(node, outers, holes) {
+	const children = node.Childs?.() ?? node.m_Childs ?? [];
+	for (const child of children) {
+		const contour = child.Contour?.() ?? child.m_polygon ?? [];
+		if (contour.length >= 3) {
+			if (child.IsHole?.() ?? child.m_IsHole) holes.push(_clipperPolyToPath(contour));
+			else outers.push(_clipperPolyToPath(contour));
+		}
+		_walkPolyTree(child, outers, holes);
+	}
+}
+
+function _computeMergedBoundary(worldPaths, innerWorldPaths) {
+	if (typeof ClipperLib === "undefined") return null;
+	const subj = [];
+	for (const wp of worldPaths) subj.push(..._pathToClipperPolys(wp));
+	if (!subj.length) return null;
+	const innerClip = [];
+	for (const ip of innerWorldPaths) innerClip.push(..._pathToClipperPolys(ip));
+
+	try {
+		const cprUnion = new ClipperLib.Clipper();
+		cprUnion.AddPaths(subj, ClipperLib.PolyType.ptSubject, true);
+		const unionResult = new ClipperLib.Paths();
+		cprUnion.Execute(ClipperLib.ClipType.ctUnion, unionResult,
+			ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+
+		const tree = new ClipperLib.PolyTree();
+		if (innerClip.length) {
+			const cprDiff = new ClipperLib.Clipper();
+			cprDiff.AddPaths(unionResult, ClipperLib.PolyType.ptSubject, true);
+			cprDiff.AddPaths(innerClip, ClipperLib.PolyType.ptClip, true);
+			cprDiff.Execute(ClipperLib.ClipType.ctDifference, tree,
+				ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+		} else {
+			const cprPack = new ClipperLib.Clipper();
+			cprPack.AddPaths(unionResult, ClipperLib.PolyType.ptSubject, true);
+			cprPack.Execute(ClipperLib.ClipType.ctUnion, tree,
+				ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+		}
+
+		const outers = [];
+		const holes = [];
+		_walkPolyTree(tree, outers, holes);
+		return { outers, holes };
+	} catch {
+		return null;
+	}
+}
+
 export class UnifiedAuraGroup {
 
 	/** @type {string} */
@@ -341,6 +419,31 @@ export class UnifiedAuraGroup {
 		this.#lineConfig = config;
 		this.#boundaryPath = [];
 		this.#innerBoundaryPaths = [];
+
+		const merged = _computeMergedBoundary(worldPaths, innerWorldPaths);
+		if (merged) {
+			for (const outer of merged.outers)
+				this.#boundaryPath.push(...outer);
+			for (const hole of merged.holes)
+				this.#innerBoundaryPaths.push(hole);
+
+			const dashOpts = config.lineType === LINE_TYPES.DASHED
+				? { dashSize: config.lineDashSize ?? 15, gapSize: config.lineGapSize ?? 10 }
+				: null;
+
+			if (dashOpts) {
+				drawDashedComplexPath(this.#lineGfx, this.#boundaryPath, dashOpts);
+				for (const innerPath of this.#innerBoundaryPaths)
+					drawDashedComplexPath(this.#lineGfx, innerPath, dashOpts);
+			} else {
+				drawComplexPath(this.#lineGfx, this.#boundaryPath);
+				for (const innerPath of this.#innerBoundaryPaths)
+					drawComplexPath(this.#lineGfx, innerPath);
+			}
+
+			this.#container.addChild(this.#lineGfx);
+			return;
+		}
 
 		const nudge = canvas.grid.size * 0.5;
 
