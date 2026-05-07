@@ -3,7 +3,7 @@
 import { DOCUMENT_AURAS_FLAG, LINE_TYPES, MODULE_NAME } from "../consts.mjs";
 import { createRadiusExtensionProxy, hasRadiusExtensions } from "./aura-radius-expression-extensions.mjs";
 
-export const latestAuraConfigVersion = 2;
+export const latestAuraConfigVersion = 3;
 
 /**
  * @typedef {Object} AuraConfig
@@ -13,11 +13,6 @@ export const latestAuraConfigVersion = 2;
  * @property {boolean} enabled
  * @property {boolean} unified
  * @property {boolean} onlyEnabledInCombat
- * @property {boolean} lineAnimationScroll
- * @property {boolean} lineAnimationPulse
- * @property {boolean} lineAnimationInvert
- * @property {number} animationSpeed
- * @property {boolean} animationWhenSelected
  * @property {string} keyPressMode Mode for key press visibility: "DISABLED", "ONLY_WHEN_PRESSED", "ALSO_WHEN_PRESSED"
  * @property {string} keyToPress
  * @property {number | string} radius A numeric value or an expression representing the outer radius of the aura.
@@ -31,8 +26,6 @@ export const latestAuraConfigVersion = 2;
  * @property {number} lineDashSize
  * @property {number} lineGapSize
  * @property {number} lineDashOffsetAnimation
- * @property {boolean} lineGlow
- * @property {number} lineGlowStrength
  * @property {number} radiusOffset
  * @property {number} fillType
  * @property {string} fillColor
@@ -42,9 +35,6 @@ export const latestAuraConfigVersion = 2;
  * @property {{ x: number; y: number; }} fillTextureOffset
  * @property {{ x: number; y: number; } | null} fillTextureOffsetAnimation
  * @property {{ x: number; y: number; }} fillTextureScale
- * @property {boolean} fillAnimation
- * @property {number} fillAnimationSpeed
- * @property {number} fillAnimationAngle
  * @property {VisibilityConfig} ownerVisibility
  * @property {VisibilityConfig} nonOwnerVisibility
  * @property {EffectConfig[]} effects
@@ -243,12 +233,6 @@ export const auraDefaults = () => ({
 	enabled: true,
 	unified: false,
 	onlyEnabledInCombat: false,
-	lineAnimationScroll: false,
-	lineAnimationPulse: false,
-	lineAnimationInvert: false,
-	pulseToMax: false,
-	animationSpeed: 1,
-	animationWhenSelected: false,
 	keyPressMode: "DISABLED",
 	keyToPress: "AltLeft",
 	radius: 1,
@@ -262,8 +246,6 @@ export const auraDefaults = () => ({
 	lineDashSize: 15,
 	lineGapSize: 10,
 	lineDashOffsetAnimation: 0,
-	lineGlow: false,
-	lineGlowStrength: 10,
 	radiusOffset: 0,
 	fillType: CONST.DRAWING_FILL_TYPES.SOLID,
 	fillColor: "#FF0000",
@@ -273,9 +255,6 @@ export const auraDefaults = () => ({
 	fillTextureOffset: { x: 0, y: 0 },
 	fillTextureOffsetAnimation: null,
 	fillTextureScale: { x: 100, y: 100 },
-	fillAnimation: false,
-	fillAnimationSpeed: 0,
-	fillAnimationAngle: 0,
 	ownerVisibility: auraVisibilityDefaults,
 	nonOwnerVisibility: auraVisibilityDefaults,
 	effects: [],
@@ -385,6 +364,24 @@ const migrations = [
 	config => {
 		config.lineAnimationInvert = false;
 		return config;
+	},
+	// v2 -> v3
+	// Strip dead fields from the old fork animation system (removed during the upstream merge).
+	config => {
+		delete config.animation;
+		delete config.animationType;
+		delete config.animationSpeed;
+		delete config.animationWhenSelected;
+		delete config.lineAnimationScroll;
+		delete config.lineAnimationPulse;
+		delete config.lineAnimationInvert;
+		delete config.pulseToMax;
+		delete config.lineGlow;
+		delete config.lineGlowStrength;
+		delete config.fillAnimation;
+		delete config.fillAnimationSpeed;
+		delete config.fillAnimationAngle;
+		return config;
 	}
 ];
 
@@ -401,22 +398,12 @@ export function areAurasVisuallyEqual(a, b) {
 		"lineOpacity",
 		"lineDashSize",
 		"lineGapSize",
-		"lineGlow",
-		"lineGlowStrength",
-		// "radiusOffset",
+		//"lineDashOffsetAnimation",
+		//"radiusOffset",
 		"fillType",
 		"fillColor",
 		"fillOpacity",
-		"fillTexture",
-		"fillAnimation",
-		"fillAnimationSpeed",
-		"fillAnimationAngle",
-		"animation",
-		"animationType",
-		"lineAnimationInvert",
-		"pulseToMax",
-		"animationSpeed",
-		"animationWhenSelected"
+		"fillTexture"
 	];
 	for (const p of props) {
 		if (a[p] !== b[p]) return false;

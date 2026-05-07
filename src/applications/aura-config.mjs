@@ -2,7 +2,6 @@
 import { html, nothing, render } from "lit";
 import { classMap } from "lit/directives/class-map.js";
 import { createRef, ref } from "lit/directives/ref.js";
-import { styleMap } from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
 import "../components/data-path-autocomplete.mjs";
 import { collectDataPathsFromDatamodels, collectDataPathsFromObject } from "../components/data-path-autocomplete.mjs";
@@ -340,16 +339,6 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				`)}
 
-				<div class=${classMap({ "form-group": true, "hidden": isNone })}>
-					<label>Glow / Blur <span class="units">(px)</span></label>
-					<div class="form-fields">
-						<label>
-							<input type="checkbox" name="lineGlow" .checked=${this.#aura.lineGlow ?? false} ?disabled=${this.#disabled}> Enable
-						</label>
-						<input type="number" name="lineGlowStrength" placeholder="Strength" .value=${this.#aura.lineGlowStrength ?? 10} required min="0" step="1" ?disabled=${this.#disabled || !this.#aura.lineGlow}>
-					</div>
-				</div>
-
 				<div class=${classMap({ "form-group": true, "hidden": !isDashed })}>
 					<label>Dash Config <span class="units">(px)</span></label>
 					<div class="form-fields">
@@ -365,40 +354,6 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
-					<label>Animation</label>
-					<div class="form-fields">
-						<label>
-							<input type="checkbox" name="animation" .checked=${this.#aura.animation ?? false} ?disabled=${this.#disabled || (!isDashed && this.#aura.animationType !== "pulse")}> Enable
-						</label>
-						<select name="animationType" .value=${this.#aura.animationType ?? "scroll"} ?disabled=${this.#disabled || !this.#aura.animation}>
-							<option value="scroll">Scroll</option>
-							<option value="pulse">Pulse</option>
-						</select>
-						<input type="number" name="animationSpeed" placeholder="Speed" .value=${this.#aura.animationSpeed ?? 1} required step="0.1" ?disabled=${this.#disabled || !this.#aura.animation}>
-					</div>
-				</div>
-
-				<div class="form-group slim" style=${styleMap({ display: this.#aura.animation && this.#aura.animationType === "scroll" && isDashed ? "block" : "none" })}>
-					<label>
-						<input type="checkbox" name="lineAnimationInvert" .checked=${this.#aura.lineAnimationInvert ?? false} ?disabled=${this.#disabled}>
-						Invert Direction
-					</label>
-				</div>
-
-				<div class="form-group slim">
-					<label>
-						<input type="checkbox" name="pulseToMax" .checked=${this.#aura.pulseToMax ?? false} ?disabled=${this.#disabled || !this.#aura.animation || this.#aura.animationType !== "pulse"}>
-						Pulse To Max
-					</label>
-				</div>
-
-				<div class="form-group slim">
-					<label>
-						<input type="checkbox" name="animationWhenSelected" .checked=${this.#aura.animationWhenSelected ?? false} ?disabled=${this.#disabled || !this.#aura.animation}>
-						Only When Selected
-					</label>
-				</div>
 			</div>
 		`;
 	};

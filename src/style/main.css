@@ -345,7 +345,7 @@ gaa-data-path-autocomplete {
 	border: 1px solid currentColor;
 	border-radius: 1px;
 	background:
-		linear-gradient(var(--color)),
+		linear-gradient(var(--color), var(--color)),
 		url(./assets/checkerboard.svg) 0 0 / 8px 8px;
 }
 

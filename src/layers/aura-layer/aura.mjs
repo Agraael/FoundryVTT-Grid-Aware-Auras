@@ -295,7 +295,13 @@ export class Aura {
 			: null;
 
 		let geometryPath = [...this.#geometry.getPath()];
-		const holeGeometries = this.#innerGeometry ? [[...this.#innerGeometry.getPath()]] : [];
+		let holeGeometries = this.#innerGeometry ? [[...this.#innerGeometry.getPath()]] : [];
+
+		const radiusOffsetPx = auraConfig.radiusOffset ?? 0;
+		if (radiusOffsetPx !== 0) {
+			geometryPath = _offsetPath(geometryPath, radiusOffsetPx);
+			holeGeometries = holeGeometries.map(h => _offsetPath(h, -radiusOffsetPx));
+		}
 
 		// elevationAware: cull this aura's local rendering against THT terrain.
 		// getWorldPath stays unclipped so UnifiedAuraGroup can union same-name auras even when
@@ -464,5 +470,36 @@ export class Aura {
 		}
 
 		return !hasRelevantNonDefaultState && visibility.default;
+	}
+}
+
+const _OFFSET_SCALE = 100;
+
+function _offsetPath(path, deltaPx) {
+	if (typeof ClipperLib === "undefined" || !path?.length) return path;
+	const poly = [];
+	for (const cmd of path) {
+		if (cmd.type === "m" && poly.length) break;
+		if (cmd.type === "m" || cmd.type === "l" || cmd.type === "a")
+			poly.push({ X: Math.round(cmd.x * _OFFSET_SCALE), Y: Math.round(cmd.y * _OFFSET_SCALE) });
+	}
+	if (poly.length < 3) return path;
+	try {
+		const co = new ClipperLib.ClipperOffset();
+		co.AddPath(poly, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+		const out = new ClipperLib.Paths();
+		co.Execute(out, deltaPx * _OFFSET_SCALE);
+		if (!out.length) return path;
+		const result = [];
+		for (const p of out) {
+			if (p.length < 3) continue;
+			result.push({ type: "m", x: p[0].X / _OFFSET_SCALE, y: p[0].Y / _OFFSET_SCALE });
+			for (let i = 1; i < p.length; i++)
+				result.push({ type: "l", x: p[i].X / _OFFSET_SCALE, y: p[i].Y / _OFFSET_SCALE });
+			result.push({ type: "l", x: p[0].X / _OFFSET_SCALE, y: p[0].Y / _OFFSET_SCALE });
+		}
+		return result.length ? result : path;
+	} catch {
+		return path;
 	}
 }
