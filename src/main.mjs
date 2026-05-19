@@ -395,3 +395,15 @@ Hooks.on("canvasTearDown", () => {
 	if (AuraLayer.current)
 		AuraLayer.current._isTearingDown = true;
 });
+
+Hooks.on("terrain-height-tools.updateTerrain", () => {
+	const tryRedraw = (attempts = 0) => {
+		const layer = AuraLayer.current;
+		if (layer && layer._auraManager) {
+			layer._updateAuras({ force: true });
+			return;
+		}
+		if (attempts < 10) setTimeout(() => tryRedraw(attempts + 1), 50);
+	};
+	tryRedraw();
+});

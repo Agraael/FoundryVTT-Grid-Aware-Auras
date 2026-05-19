@@ -30,6 +30,7 @@ let customFilters = [];
 export function listAuraTargetFilters() {
 	return [
 		...standardFilters.map(({ id, name, group }) => ({ value: id, label: name, group })),
+		..._advancedTeamFilters().map(({ id, name, group }) => ({ value: id, label: name, group })),
 		...customFilters.map(({ id, name }) => ({ value: id, label: name, group: game.i18n.localize("GRIDAWAREAURAS.AuraDisplayCustom") }))
 	];
 }
@@ -84,6 +85,24 @@ export function initialiseAuraTargetFilters() {
 	compileCustomFilters();
 }
 
+/** Returns advanced-team target filters from token-factions, if installed and active. */
+function _advancedTeamFilters() {
+	if (!game.modules.get("token-factions")?.active) return [];
+	let useAdvanced = false;
+	try { useAdvanced = game.settings.get("token-factions", "color-from") === "advanced-factions"; }
+	catch { return []; }
+	if (!useAdvanced) return [];
+	let teams = [];
+	try { teams = game.settings.get("token-factions", "team-setup") ?? []; }
+	catch { return []; }
+	return teams.filter(t => t?.id).map(t => ({
+		id: `TEAM_${t.id}`,
+		name: t.name ?? t.id,
+		group: "Advanced Team",
+		f: (target) => target.actor?.getFlag("token-factions", "team") === t.id
+	}));
+}
+
 /**
  * Recompiles the list of custom filters.
  * Should be called on initialisation and whenever the filters world setting changes.
@@ -114,6 +133,7 @@ export function compileCustomFilters() {
 export function canTargetToken(targetToken, sourceToken, aura, filterId) {
 	const filter = filterId?.length &&
 		(standardFilters.find(f => f.id === filterId) ??
+		_advancedTeamFilters().find(f => f.id === filterId) ??
 		customFilters.find(f => f.id === filterId));
 
 	if (filter) {

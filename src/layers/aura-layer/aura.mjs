@@ -236,9 +236,18 @@ export class Aura {
 		// Need to offset by token position, as the geometry is relative to token position, not relative to canvas pos
 		const auraOffset = this.#getOffset(sourceTokenPosition, useActualSourcePosition ? this.#token : this.#token.document);
 
-		// Token is inside the aura if it is partially inside the outer geometry and not totally inside the inner geometry.
-		return this.#geometry.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "partial" })
+		const inGeometry = this.#geometry.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "partial" })
 			&& !this.#innerGeometry?.isInside(targetToken, { auraOffset, tokenAltPosition: targetTokenPosition, mode: "total" });
+		if (!inGeometry) return false;
+
+		if (this.#config?.elevationAware) {
+			const sourceElev = this.#token?.document?.elevation ?? 0;
+			const targetElev = targetToken?.document?.elevation ?? 0;
+			const radius = this.#radius ?? 0;
+			if (targetElev < sourceElev || targetElev > sourceElev + radius) return false;
+		}
+
+		return true;
 	}
 
 	destroy(...args) {
