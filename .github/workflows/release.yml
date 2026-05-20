@@ -22,7 +22,7 @@ jobs:
       - name: Update module.json download URL
         run: |
           VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\///')
-          jq --arg DOWNLOAD_URL "https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/download/$VERSION/release.zip" \
+          jq --arg DOWNLOAD_URL "https://github.com/${{ github.repository }}/releases/download/$VERSION/release.zip" \
              '.download = $DOWNLOAD_URL' module.json > temp.json && mv temp.json module.json
 
       - name: Zip module files
@@ -78,8 +78,8 @@ jobs:
                      "id": "'"$PACKAGE_ID"'",
                      "release": {
                        "version": "'"$VERSION"'",
-                       "manifest": "https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/download/'"$VERSION_TAG"'/module.json",
-                       "notes": "https://github.com/Wibble199/FoundryVTT-Grid-Aware-Auras/releases/tag/'"$VERSION_TAG"'",
+                       "manifest": "https://github.com/${{ github.repository }}/releases/download/'"$VERSION_TAG"'/module.json",
+                       "notes": "https://github.com/${{ github.repository }}/releases/tag/'"$VERSION_TAG"'",
                        "compatibility": {
                          "minimum": "'"$MINIMUM"'",
                          "verified": "'"$VERIFIED"'",
