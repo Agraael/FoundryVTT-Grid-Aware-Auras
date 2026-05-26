@@ -106,6 +106,34 @@ export function isTokenInside(testToken, parentToken, auraId) {
 }
 
 /**
+ * Returns the maximum `movementPenalty` of any active aura covering the given world point.
+ * Used by external rulers (lancer-automations) to add per-cell movement cost.
+ * @param {number} x World-space x in pixels.
+ * @param {number} y World-space y in pixels.
+ * @param {Object} [options]
+ * @param {Token | TokenDocument} [options.excludeToken] Token whose own auras should be ignored (matches by document id).
+ * @returns {number}
+ */
+export function getMovementPenaltyAt(x, y, { excludeToken } = {}) {
+	const layer = AuraLayer.current;
+	if (!layer) return 0;
+	const excludeDocId = excludeToken instanceof Token ? excludeToken.document?.id : excludeToken?.id;
+	const inCombat = game.combat?.started ?? false;
+	let max = 0;
+	for (const { parent, aura } of layer._auraManager.getAllAuras({ preview: false })) {
+		const cfg = aura.config;
+		const penalty = Number(cfg?.movementPenalty) || 0;
+		if (penalty <= 0) continue;
+		if (!cfg.enabled) continue;
+		if (cfg.onlyEnabledInCombat && !inCombat) continue;
+		if (excludeDocId && parent.document?.id === excludeDocId) continue;
+		if (!aura.isWorldPointInside(x, y)) continue;
+		if (penalty > max) max = penalty;
+	}
+	return max;
+}
+
+/**
  * Registers a new radius expression extension.
  * @param {string} name The name to register the expression under. Must only use alphanumeric, '.', '-' or '_' characters, must not start or end with '.', or contain consequtive '.'s.
  * @param {(actor: Actor | undefined, item: Item | undefined) => number} resolver Function to resolve a value. Accepts actor and item parameters.

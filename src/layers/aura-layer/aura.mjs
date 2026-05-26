@@ -317,6 +317,7 @@ export class Aura {
 		// each is locally culled. The blockers are exposed so the merged shape uses the same set.
 		this.#blockers = [];
 		if (auraConfig.elevationAware) {
+			if (!this.#graphics) return;
 			const innerPath = this.#innerGeometry ? [...this.#innerGeometry.getPath()] : null;
 			const originTopLeft = { x: this.#graphics.x, y: this.#graphics.y };
 			const clipped = clipAuraAgainstTerrain(geometryPath, this.#token, originTopLeft, radius, null, innerPath);

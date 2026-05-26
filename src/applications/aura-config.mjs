@@ -470,16 +470,6 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</div>
 				</div>
 
-				<div class="form-group">
-					<label>Texture Animation</label>
-					<div class="form-fields">
-						<label>
-							<input type="checkbox" name="fillAnimation" .checked=${this.#aura.fillAnimation ?? false} ?disabled=${this.#disabled || !isPattern}> Enable
-						</label>
-						<input type="number" name="fillAnimationSpeed" placeholder="Speed" .value=${this.#aura.fillAnimationSpeed ?? 0} required step="0.1" ?disabled=${this.#disabled || !isPattern || !this.#aura.fillAnimation}>
-						<input type="number" name="fillAnimationAngle" placeholder="Angle" .value=${this.#aura.fillAnimationAngle ?? 0} required step="1" ?disabled=${this.#disabled || !isPattern || !this.#aura.fillAnimation}>
-					</div>
-				</div>
 			</div>
 		`;
 	};
@@ -505,6 +495,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 					<input type="checkbox" name="elevationAware" .checked=${this.#aura.elevationAware ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
 					Elevation Aware (THT)
 				</label>
+			</div>
+
+			<div class="form-group">
+				<label title="Extra movement cost added per grid cell entered while inside this aura. Read by external rulers (lancer-automations). 0 disables.">Movement Penalty <span class="units">(grid units / cell)</span></label>
+				<div class="form-fields">
+					<input type="number" name="movementPenalty" .value=${this.#aura.movementPenalty ?? 0} required min="0" step="1" ?disabled=${this.#disabled} data-dtype="Number">
+				</div>
 			</div>
 
 			<div class="form-group">

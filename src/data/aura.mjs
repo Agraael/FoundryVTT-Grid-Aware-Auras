@@ -46,6 +46,7 @@ export const latestAuraConfigVersion = 3;
  * @property {boolean} terrainHeightTools.onlyWhenAltPressed Only show when Alt key is pressed
  * @property {boolean} terrainHeightTools.onlyWhenTargeted Only show when a token is targeted
  * @property {boolean} elevationAware When true, cells whose line of sight from the source token is blocked by Terrain Height Tools terrain are culled from the aura. No-op when terrain-height-tools is not active.
+ * @property {number} movementPenalty Flat extra grid-units added to movement cost per cell entered while inside this aura. Queried by external rulers (e.g. lancer-automations) via api.getMovementPenaltyAt.
  */
 /** @typedef {AuraConfig & { radiusCalculated: number; innerRadiusCalculated: number; }} AuraConfigWithRadius */
 /**
@@ -266,7 +267,8 @@ export const auraDefaults = () => ({
 		onlyWhenAltPressed: false,
 		onlyWhenTargeted: false
 	},
-	elevationAware: false
+	elevationAware: false,
+	movementPenalty: 0
 });
 
 /** @type {() => ColorAnimation} */

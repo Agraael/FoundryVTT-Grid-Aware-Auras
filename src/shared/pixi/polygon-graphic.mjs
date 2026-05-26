@@ -248,10 +248,13 @@ export class PolygonGraphic extends PIXI.Container {
 		}
 
 		// Fill texture offset
+		// tilePosition wrap period is tileScale * texSize (see PIXI TilingSpriteRenderer.render).
 		if (this.#fillTilingSprite && this.#style.fillTextureOffsetAnimation) {
 			const { x: xDelta, y: yDelta } = this.#style.fillTextureOffsetAnimation;
-			const xOffset = ((now / 1000) * xDelta) % (this.#style.fillTexture?.width ?? 1);
-			const yOffset = ((now / 1000) * yDelta) % (this.#style.fillTexture?.height ?? 1);
+			const periodX = (this.#style.fillTexture?.width ?? 1) * (this.#fillTilingSprite.tileScale.x || 1);
+			const periodY = (this.#style.fillTexture?.height ?? 1) * (this.#fillTilingSprite.tileScale.y || 1);
+			const xOffset = ((now / 1000) * xDelta) % periodX;
+			const yOffset = ((now / 1000) * yDelta) % periodY;
 			this.#fillTilingSprite.tilePosition.set(xOffset, yOffset);
 		}
 	}
