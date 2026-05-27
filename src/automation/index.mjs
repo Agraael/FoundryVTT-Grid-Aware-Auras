@@ -3,10 +3,12 @@ import * as effects from "./effects.mjs";
 import * as macros from "./macros.mjs";
 import * as sequencer from "./sequencer.mjs";
 import * as terrainHeightTools from "./terrain-height-tools.mjs";
+import { setupThtRulerOverlay } from "./tht-ruler-overlay.mjs";
 
 /** @typedef {{ round: number; turn: number; combatantId: string; tokenId: string; }} CombatState */
 
 export function setupAutomation() {
+	setupThtRulerOverlay();
 	Hooks.on(ENTER_LEAVE_AURA_HOOK, (...args) => {
 		effects.onEnterLeaveAura(...args);
 		macros.onEnterLeaveAura(...args);

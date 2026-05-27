@@ -1272,6 +1272,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 					</select>
 				</div>
 			</div>
+
 		</div>
 	`;
 

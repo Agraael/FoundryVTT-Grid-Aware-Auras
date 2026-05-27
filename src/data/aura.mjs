@@ -45,7 +45,7 @@ export const latestAuraConfigVersion = 3;
  * @property {string} terrainHeightTools.targetTokens ID of the filter to use to specify targetable tokens.
  * @property {boolean} terrainHeightTools.onlyWhenAltPressed Only show when Alt key is pressed
  * @property {boolean} terrainHeightTools.onlyWhenTargeted Only show when a token is targeted
- * @property {boolean} terrainHeightTools.interactWithThtRuler Treat the aura as terrain in the THT ruler so passing through it is reported
+ * @property {boolean} terrainHeightTools.interactWithThtRuler Paint the aura as a colored segment on the THT LoS ruler when crossed
  * @property {boolean} elevationAware When true, cells whose line of sight from the source token is blocked by Terrain Height Tools terrain are culled from the aura. No-op when terrain-height-tools is not active.
  * @property {number} movementPenalty Flat extra grid-units added to movement cost per cell entered while inside this aura. Queried by external rulers (e.g. lancer-automations) via api.getMovementPenaltyAt.
  */
