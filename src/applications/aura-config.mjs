@@ -498,9 +498,9 @@ export class AuraConfigApplication extends ApplicationV2 {
 			</div>
 
 			<div class="form-group">
-				<label title="Extra movement cost added per grid cell entered while inside this aura. Read by external rulers (lancer-automations). 0 disables.">Movement Penalty <span class="units">(grid units / cell)</span></label>
+				<label title="Extra movement cost added per grid cell entered while inside this aura. Read by Lancer Automations' ruler. 0 disables.">Movement Penalty (Lancer Automations) <span class="units">(grid units / cell)</span></label>
 				<div class="form-fields">
-					<input type="number" name="movementPenalty" .value=${this.#aura.movementPenalty ?? 0} required min="0" step="1" ?disabled=${this.#disabled} data-dtype="Number">
+					<input type="number" name="movementPenalty" .value=${this.#aura.movementPenalty ?? 0} required min="0" step="1" ?disabled=${this.#disabled || !game.modules.get("lancer-automations")?.active} data-dtype="Number">
 				</div>
 			</div>
 
