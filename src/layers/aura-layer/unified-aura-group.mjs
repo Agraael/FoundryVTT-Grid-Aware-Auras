@@ -143,34 +143,12 @@ export class UnifiedAuraGroup {
 	/** @type {PathCommand[][]} */
 	#innerBoundaryPaths = [];
 
-	/** @type {import("../../data/aura.mjs").AuraConfig | null} */
-	#lineConfig = null;
-
-	/** @type {Aura | null} */
-	#leadAura = null;
-
-	#animating = false;
-
-	#boundTick;
-
-	/** @type {PIXI.Graphics | null} */
-	#animFillGfx = null;
-
-	/** @type {PIXI.Container | null} */
-	#animFillContainer = null;
-
-	/** @type {PIXI.RenderTexture | null} */
-	#animFillRt = null;
-
-	#animFillParams = null;
-
 	/** @param {string} name */
 	constructor(name) {
 		this.#name = name;
 		this.#container = new PIXI.Container();
 		this.#container.sortLayer = 689;
 		getAuraParent().addChild(this.#container);
-		this.#boundTick = this.#tick.bind(this);
 	}
 
 	get name() { return this.#name; }
@@ -179,11 +157,6 @@ export class UnifiedAuraGroup {
 	 * @param {AuraEntry[]} entries
 	 */
 	async update(entries) {
-		if (this.#animating) {
-			canvas.app.ticker.remove(this.#boundTick);
-			this.#animating = false;
-		}
-
 		for (const { aura } of this.#entries) {
 			try { aura.suppressed = false; } catch (_) { /* aura may have been destroyed */ }
 		}
@@ -194,21 +167,10 @@ export class UnifiedAuraGroup {
 		this.#container.removeChildren().forEach(c => c.destroy({ children: true }));
 		this.#lineGfx = null;
 
-		if (this.#animFillContainer) {
-			this.#animFillContainer.destroy({ children: true });
-			this.#animFillContainer = null;
-			this.#animFillGfx = null;
-		}
-		this.#animFillRt = null;
-		this.#animFillParams = null;
-
 		const visibleEntries = entries.filter(({ aura }) => aura.isVisible);
 
 		this.#container.visible = visibleEntries.length >= 2;
-		this.#leadAura = null;
 		if (visibleEntries.length < 2) return;
-
-		this.#leadAura = visibleEntries[0].aura;
 
 		for (const { aura } of visibleEntries) {
 			aura.suppressed = true;
@@ -222,11 +184,6 @@ export class UnifiedAuraGroup {
 
 		await this.#drawFill(worldPaths, innerWorldPaths, config);
 		this.#drawOutline(worldPaths, innerWorldPaths, visibleEntries, config);
-
-		if ((config.animation && this.#lineGfx) || (config.fillAnimation && this.#animFillGfx)) {
-			canvas.app.ticker.add(this.#boundTick);
-			this.#animating = true;
-		}
 	}
 
 	updateVisibility() {
@@ -235,99 +192,14 @@ export class UnifiedAuraGroup {
 	}
 
 	destroy() {
-		if (this.#animating) {
-			canvas.app.ticker.remove(this.#boundTick);
-			this.#animating = false;
-		}
 		for (const { aura } of this.#entries) {
 			try { aura.suppressed = false; } catch (_) { /* aura may have been destroyed */ }
 		}
 		this.#entries = [];
 		for (const rt of this.#renderTextures) rt.destroy(true);
 		this.#renderTextures = [];
-		if (this.#animFillContainer) {
-			this.#animFillContainer.destroy({ children: true });
-			this.#animFillContainer = null;
-			this.#animFillGfx = null;
-		}
 		getAuraParent().removeChild(this.#container);
 		this.#container.destroy({ children: true });
-	}
-
-	#tick() {
-		if (!this.#leadAura) return;
-
-		const config = this.#lineConfig;
-		if (config && this.#lineGfx) {
-			const animOffset = this.#leadAura.animationOffset;
-
-			const leadsConfig = this.#leadAura.config;
-			if (leadsConfig.animation && leadsConfig.animationType === "pulse") {
-				const sinVal = (Math.sin(this.#leadAura.animationOffset * 0.1) + 1) / 2;
-				const baseOpacity = leadsConfig.lineOpacity ?? 1;
-
-				let alpha;
-				if (leadsConfig.pulseToMax) {
-					alpha = baseOpacity + (sinVal * (1 - baseOpacity));
-				} else {
-					alpha = 0.2 + (sinVal * (baseOpacity - 0.2));
-				}
-
-				this.#lineGfx.alpha = alpha;
-			}
-
-			if (leadsConfig.animation && leadsConfig.animationType === "scroll" && leadsConfig.lineType === LINE_TYPES.DASHED) {
-				this.#lineGfx.clear();
-				this.#lineGfx.lineStyle({
-					color: Color.from(leadsConfig.lineColor ?? "#000000"),
-					alpha: leadsConfig.lineOpacity ?? 0,
-					width: leadsConfig.lineWidth ?? 0,
-					alignment: 0
-				});
-				const dashOpts = {
-					dashSize: config.lineDashSize ?? 15,
-					gapSize: config.lineGapSize ?? 10,
-					offset: animOffset
-				};
-				drawDashedComplexPath(this.#lineGfx, this.#boundaryPath, dashOpts);
-				for (const innerPath of this.#innerBoundaryPaths) {
-					drawDashedComplexPath(this.#lineGfx, innerPath, dashOpts);
-				}
-			}
-		}
-
-		if (this.#animFillGfx && this.#animFillParams) {
-			const { worldPaths, innerWorldPaths, texture, fillConfig, containerX, containerY } = this.#animFillParams;
-			const animOffset = this.#leadAura.fillAnimationOffset;
-			const { x: xOffset, y: yOffset } = fillConfig.fillTextureOffset ?? { x: 0, y: 0 };
-			const { x: xScale, y: yScale } = fillConfig.fillTextureScale ?? { x: 100, y: 100 };
-			const matrix = new PIXI.Matrix(
-				xScale / 100, 0, 0, yScale / 100,
-				xOffset + animOffset.x + containerX,
-				yOffset + animOffset.y + containerY
-			);
-			// Render each aura's donut individually with OVER compositing (same logic as #drawFill).
-			let isFirst = true;
-			for (let i = 0; i < worldPaths.length; i++) {
-				if (worldPaths[i].length === 0) continue;
-				this.#animFillGfx.clear();
-				this.#animFillGfx.beginTextureFill({
-					texture,
-					color: Color.from(fillConfig.fillColor ?? "#ffffff"),
-					alpha: 1.0,
-					matrix
-				});
-				drawComplexPath(this.#animFillGfx, worldPaths[i]);
-				if (innerWorldPaths[i]?.length > 0) {
-					this.#animFillGfx.beginHole();
-					drawComplexPath(this.#animFillGfx, innerWorldPaths[i]);
-					this.#animFillGfx.endHole();
-				}
-				this.#animFillGfx.endFill();
-				canvas.app.renderer.render(this.#animFillContainer, { renderTexture: this.#animFillRt, clear: isFirst });
-				isFirst = false;
-			}
-		}
 	}
 
 	/**
@@ -412,16 +284,6 @@ export class UnifiedAuraGroup {
 				isFirst = false;
 				tmpContainer.destroy({ children: true });
 			}
-
-			if (config.fillAnimation) {
-				this.#animFillGfx = new PIXI.Graphics();
-				this.#animFillContainer = new PIXI.Container();
-				this.#animFillContainer.x = containerX;
-				this.#animFillContainer.y = containerY;
-				this.#animFillContainer.addChild(this.#animFillGfx);
-				this.#animFillRt = rt;
-				this.#animFillParams = { worldPaths, innerWorldPaths, texture, fillConfig: config, containerX, containerY };
-			}
 		}
 
 		const sprite = new PIXI.Sprite(rt);
@@ -451,7 +313,6 @@ export class UnifiedAuraGroup {
 			width: config.lineWidth ?? 0,
 			alignment: 0
 		});
-		this.#lineConfig = config;
 		this.#boundaryPath = [];
 		this.#innerBoundaryPaths = [];
 

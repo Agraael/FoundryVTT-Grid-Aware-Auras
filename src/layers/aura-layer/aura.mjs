@@ -6,6 +6,7 @@ import { PolygonGraphic } from "../../shared/pixi/polygon-graphic.mjs";
 import { clipAuraAgainstTerrain } from "../../utils/elevation-aware.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
+import { isKeyPressed } from "../../main.mjs";
 
 /**
  * Class that manages a single aura.
@@ -438,7 +439,25 @@ export class Aura {
 			return false;
 		}
 
-		// Otherwise, determine the visibility based on either ownerVisibility or nonOwnerVisibility, depending on the
+		// keyPressMode gates visibility on a held key (e.g. hold Alt to reveal).
+		// ONLY_WHEN_PRESSED: the key is the sole gate. ALSO_WHEN_PRESSED: key OR the normal matrix.
+		const keyPressMode = this.#config.keyPressMode ?? "DISABLED";
+		if (keyPressMode === "ONLY_WHEN_PRESSED")
+			return isKeyPressed(this.#config.keyToPress ?? "AltLeft");
+
+		const matrixVisible = this.#getMatrixVisibility();
+		if (keyPressMode === "ALSO_WHEN_PRESSED")
+			return matrixVisible || isKeyPressed(this.#config.keyToPress ?? "AltLeft");
+
+		return matrixVisible;
+	}
+
+	/**
+	 * Visibility from the owner/non-owner state matrix (hover/controlled/dragging/targeted/turn),
+	 * independent of the key-press gate.
+	 */
+	#getMatrixVisibility() {
+		// Determine the visibility based on either ownerVisibility or nonOwnerVisibility, depending on the
 		// user's relationship to the token.
 		//
 		// For all flags other than default (e.g. targeted, hovered, etc.), we see if any of them are relevant now.

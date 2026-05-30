@@ -37,6 +37,7 @@ document.addEventListener("keydown", event => {
 	if (!wasPressed) {
 		// Update THT rulers when key is pressed
 		updateTerrainHeightToolsForControlledToken();
+		refreshKeyPressVisibility(event.code);
 	}
 });
 
@@ -47,6 +48,7 @@ document.addEventListener("keyup", event => {
 	// Only update if state actually changed
 	if (wasPressed) {
 		updateTerrainHeightToolsForControlledToken();
+		refreshKeyPressVisibility(event.code);
 	}
 });
 
@@ -63,6 +65,20 @@ export function isKeyPressed(keyCode) {
 	}
 
 	return isActuallyPressed;
+}
+
+// Refresh aura visibility when a key that gates a keyPressMode aura changes state.
+function refreshKeyPressVisibility(keyCode) {
+	const layer = AuraLayer.current;
+	if (!layer || !canvas?.tokens) return;
+
+	const isRelevant = canvas.tokens.placeables.some(token =>
+		layer._auraManager.getTokenAuras(token).some(aura =>
+			(aura.config.keyPressMode ?? "DISABLED") !== "DISABLED"
+			&& (aura.config.keyToPress ?? "AltLeft") === keyCode));
+
+	if (isRelevant)
+		layer._updateAuraGraphics({ updatePosition: false, updateVisibility: true });
 }
 
 // Update Terrain Height Tools rulers for controlled token

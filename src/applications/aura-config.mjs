@@ -1249,10 +1249,6 @@ export class AuraConfigApplication extends ApplicationV2 {
 					<input type="checkbox" name="terrainHeightTools.onlyWhenTargeted" .checked=${this.#aura.terrainHeightTools?.onlyWhenTargeted ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
 					Only When Targeted
 				</label>
-				<label>
-					<input type="checkbox" name="terrainHeightTools.interactWithThtRuler" .checked=${this.#aura.terrainHeightTools?.interactWithThtRuler ?? false} ?disabled=${this.#disabled} style="margin-right: 0.25rem;">
-					Interact with THT Ruler
-				</label>
 			</div>
 
 			<div class="form-group">

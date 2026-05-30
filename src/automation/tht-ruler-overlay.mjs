@@ -1,5 +1,9 @@
 import { AuraLayer } from "../layers/aura-layer/aura-layer.mjs";
 import { isTerrainHeightToolsActive } from "../utils/misc-utils.mjs";
+import { MODULE_NAME } from "../consts.mjs";
+
+const SETTING_INCLUDE = "lineOfSightIncludeAuras";
+const RAY_FLAG = "_gaaIncludeAuras";
 
 const _LINE_WIDTH = 4;
 const _ALPHA = 0.75;
@@ -37,12 +41,22 @@ function _parseColor(hex) {
 	return m ? parseInt(m[1], 16) : 0xffffff;
 }
 
+function _includeOn() {
+	try { return !!game.settings.get(MODULE_NAME, SETTING_INCLUDE); }
+	catch { return false; }
+}
+
+// Sender's flag wins (broadcast via the ray), else local setting.
+function _shouldShowOverlay() {
+	if (_activeRays.some(r => r?.[RAY_FLAG])) return true;
+	return _includeOn();
+}
+
 function* _interactingAuras() {
+	if (!_shouldShowOverlay()) return;
 	const mgr = AuraLayer.current?._auraManager;
 	if (!mgr?.getAllAuras) return;
 	for (const { aura } of mgr.getAllAuras({ preview: false })) {
-		const cfg = aura?.config;
-		if (!cfg?.terrainHeightTools?.interactWithThtRuler) continue;
 		if (!aura?.isVisible) continue;
 		if (typeof aura.isWorldPointInside !== "function") continue;
 		yield aura;
@@ -94,6 +108,39 @@ function _toCenterPoint(end) {
 	return null;
 }
 
+function _isToken(end) {
+	return end instanceof Token || !!end?.document;
+}
+
+// Token-to-token rays fan into 3 (centre + 2 edges). Use THT's calc so hex vertices match.
+function _fanRay(ray, a, b) {
+	if (ray?.includeEdges === false) return [{ a, b }];
+	if (!_isToken(ray?.a) || !_isToken(ray?.b)) return [{ a, b }];
+	const calc = globalThis.terrainHeightTools?.calculateLineOfSightRaysBetweenTokens;
+	if (typeof calc === "function") {
+		try {
+			const { left, centre, right } = calc(ray.a, ray.b);
+			return [
+				{ a: centre.p1, b: centre.p2 },
+				{ a: left.p1, b: left.p2 },
+				{ a: right.p1, b: right.p2 }
+			];
+		} catch { /* fall through */ }
+	}
+	// Fallback: perpendicular offset by radius.
+	const radius = Math.min((ray.a.w ?? 0) / 2, (ray.b.w ?? 0) / 2);
+	if (radius <= 0) return [{ a, b }];
+	const dx = b.x - a.x, dy = b.y - a.y;
+	const len = Math.hypot(dx, dy);
+	if (len < 1) return [{ a, b }];
+	const nx = -dy / len, ny = dx / len;
+	return [
+		{ a, b },
+		{ a: { x: a.x + nx * radius, y: a.y + ny * radius }, b: { x: b.x + nx * radius, y: b.y + ny * radius } },
+		{ a: { x: a.x - nx * radius, y: a.y - ny * radius }, b: { x: b.x - nx * radius, y: b.y - ny * radius } }
+	];
+}
+
 function _redraw() {
 	const g = _ensureOverlay();
 	if (!g) return;
@@ -102,7 +149,8 @@ function _redraw() {
 		const a = _toCenterPoint(ray?.a);
 		const b = _toCenterPoint(ray?.b);
 		if (!a || !b) continue;
-		_paintRay(g, a.x, a.y, b.x, b.y);
+		for (const sub of _fanRay(ray, a, b))
+			_paintRay(g, sub.a.x, sub.a.y, sub.b.x, sub.b.y);
 	}
 }
 
@@ -117,8 +165,52 @@ function _onRulerClear() {
 	g?.clear?.();
 }
 
+function _registerSetting() {
+	if (game.settings.settings.has(`${MODULE_NAME}.${SETTING_INCLUDE}`)) return;
+	game.settings.register(MODULE_NAME, SETTING_INCLUDE, {
+		scope: "client",
+		config: false,
+		type: Boolean,
+		default: false,
+		onChange: () => _redraw()
+	});
+}
+
+function _styleToggle(btn, on) {
+	btn.style.cssText = `
+		margin-top: 1.25rem; padding: 4px 8px;
+		background: ${on ? "var(--color-warm-2, rgba(255,100,0,0.18))" : "transparent"};
+		border: 1px solid ${on ? "var(--color-border-highlight, #ff6400)" : "var(--color-cool-4, #555)"};
+		border-radius: 4px; cursor: pointer; opacity: ${on ? "1" : "0.65"};
+		line-height: 1;
+	`;
+}
+
+function _injectToolbarToggle(_app, htmlOrEl) {
+	const root = htmlOrEl instanceof HTMLElement ? htmlOrEl : htmlOrEl?.[0];
+	if (!root) return;
+	if (root.querySelector(".gaa-include-auras")) return;
+	const anchor = root.querySelector('[name="rulerIncludeNoHeightTerrain"]');
+	if (!anchor) return;
+	const btn = document.createElement("button");
+	btn.type = "button";
+	btn.className = "gaa-include-auras flex0";
+	btn.dataset.tooltip = "Include auras on the LoS ruler";
+	btn.innerHTML = `<i class="fa-solid fa-circle-dot"></i>`;
+	_styleToggle(btn, _includeOn());
+	btn.addEventListener("click", async () => {
+		const next = !_includeOn();
+		await game.settings.set(MODULE_NAME, SETTING_INCLUDE, next);
+		_styleToggle(btn, next);
+	});
+	anchor.after(btn);
+}
+
 export function setupThtRulerOverlay() {
 	if (!isTerrainHeightToolsActive()) return;
+	_registerSetting();
+	Hooks.on("renderLineOfSightRulerToolbar", _injectToolbarToggle);
+	Hooks.on("renderTokenLineOfSightToolbar", _injectToolbarToggle);
 	Hooks.on("canvasReady", () => {
 		const layer = _getLosLayer();
 		if (!layer) return;
@@ -128,6 +220,11 @@ export function setupThtRulerOverlay() {
 		const origClear = proto._clearLineOfSightRays;
 		if (typeof origDraw === "function") {
 			proto._drawLineOfSightRays = function patched(rulers, ...rest) {
+				// Stamp the flag so the socket broadcast carries it.
+				if (Array.isArray(rulers) && _includeOn()) {
+					for (const r of rulers)
+						if (r && typeof r === "object") r[RAY_FLAG] = true;
+				}
 				const result = origDraw.call(this, rulers, ...rest);
 				try { _onRulerDraw(rulers); } catch (e) { console.warn("grid-aware-auras | THT ruler overlay draw failed", e); }
 				return result;
