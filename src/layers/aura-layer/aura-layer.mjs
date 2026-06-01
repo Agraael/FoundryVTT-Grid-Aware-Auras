@@ -32,6 +32,8 @@ export class AuraLayer extends CanvasLayer {
 
 	#unifiedUpdatePending = false;
 
+	#unifiedUpdatePendingExtra = false;
+
 	/** @returns {AuraLayer | undefined} */
 	static get current() {
 		return game.ready ? game.canvas?.gaaAuraLayer : undefined;
@@ -198,11 +200,22 @@ export class AuraLayer extends CanvasLayer {
 	}
 
 	_scheduleUnifiedAuraUpdate() {
-		if (this.#unifiedUpdatePending || !this.#isInitialised) return;
+		if (!this.#isInitialised) return;
+		if (this.#unifiedUpdatePending) {
+			this.#unifiedUpdatePendingExtra = true;
+			return;
+		}
 		this.#unifiedUpdatePending = true;
 		canvas.app.ticker.addOnce(() => {
-			this.#unifiedUpdatePending = false;
-			this._updateUnifiedAuras().catch(console.error);
+			this._updateUnifiedAuras()
+				.catch(console.error)
+				.finally(() => {
+					this.#unifiedUpdatePending = false;
+					if (this.#unifiedUpdatePendingExtra) {
+						this.#unifiedUpdatePendingExtra = false;
+						this._scheduleUnifiedAuraUpdate();
+					}
+				});
 		}, undefined, PIXI.UPDATE_PRIORITY.UTILITY);
 	}
 
@@ -313,8 +326,8 @@ export class AuraLayer extends CanvasLayer {
 				if (parent.id === token.id) // token cannot enter it's own aura
 					continue;
 
-				// Check if aura should only be enabled in combat
-				const isCombatActive = game.combat?.started ?? false;
+				// Check if aura should only be enabled in combat (active = combat exists, started or not)
+				const isCombatActive = !!game.combat;
 				const isAuraEnabledInContext = !aura.config.onlyEnabledInCombat || isCombatActive;
 
 				const isInAura = aura.config.enabled && isAuraEnabledInContext

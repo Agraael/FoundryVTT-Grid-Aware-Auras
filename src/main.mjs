@@ -141,12 +141,9 @@ function updateTerrainHeightToolsForControlledToken() {
 		// Check if this aura uses the Alt key for THT
 		if (config.terrainHeightTools?.onlyWhenAltPressed &&
 			config.terrainHeightTools.rulerOnDrag !== "NONE") {
-			// Check if aura should be active based on combat state
-			if (config.onlyEnabledInCombat) {
-				const isCombatActive = game.combat?.started ?? false;
-				if (!isCombatActive) {
-					continue;
-				}
+			// Check if aura should be active based on combat state (started or not)
+			if (config.onlyEnabledInCombat && !game.combat) {
+				continue;
 			}
 
 			const keyPressed = isKeyPressed(config.keyToPress ?? "AltLeft");
@@ -393,13 +390,19 @@ Hooks.on("updateCombat", combat => {
 	}
 });
 
-Hooks.on("deleteCombat", combat => {
-	for (const combatant of combat.combatants) {
-		// combatant.token returns a TokenDocument, but we need Token
-		const token = game.canvas.tokens.get(combatant.tokenId);
-		AuraLayer.current?._updateAuraGraphics({ token: token });
+// `onlyEnabledInCombat` affects any token (not just combatants), so refresh all placeables
+// on combat lifecycle events that flip `game.combat?.started`.
+function _refreshAllAurasOnCombatChange() {
+	const layer = AuraLayer.current;
+	if (!layer || !canvas?.tokens) return;
+	for (const token of canvas.tokens.placeables) {
+		layer._updateAuraGraphics({ token });
 	}
-});
+}
+
+Hooks.on("combatStart", _refreshAllAurasOnCombatChange);
+Hooks.on("createCombat", _refreshAllAurasOnCombatChange);
+Hooks.on("deleteCombat", _refreshAllAurasOnCombatChange);
 
 Hooks.on("destroyToken", token => {
 	AuraLayer.current?._onDestroyToken(token);

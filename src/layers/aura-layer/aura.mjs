@@ -354,6 +354,7 @@ export class Aura {
 			this.#geometry.bounds
 		);
 
+		canvas.app.ticker.remove(this.#boundTick);
 		canvas.app.ticker.add(this.#boundTick);
 
 		/**
@@ -436,6 +437,12 @@ export class Aura {
 	 */
 	#getVisibility() {
 		if (!this.#token.visible || this.#token.hasPreview || !this.#config.enabled) {
+			return false;
+		}
+
+		// "Only Enabled in Combat" gate: hide when there's no active combat
+		// (active = combat exists for this scene, started or not)
+		if (this.#config.onlyEnabledInCombat && !game.combat) {
 			return false;
 		}
 

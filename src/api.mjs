@@ -118,7 +118,7 @@ export function getMovementPenaltyAt(x, y, { excludeToken } = {}) {
 	const layer = AuraLayer.current;
 	if (!layer) return 0;
 	const excludeDocId = excludeToken instanceof Token ? excludeToken.document?.id : excludeToken?.id;
-	const inCombat = game.combat?.started ?? false;
+	const inCombat = !!game.combat;
 	let max = 0;
 	for (const { parent, aura } of layer._auraManager.getAllAuras({ preview: false })) {
 		const cfg = aura.config;
