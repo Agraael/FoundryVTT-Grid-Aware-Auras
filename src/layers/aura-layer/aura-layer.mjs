@@ -152,6 +152,7 @@ export class AuraLayer extends CanvasLayer {
 			for (const auraConfig of auras) {
 				const aura = previousAuras.find(a => a.config.id === auraConfig.id);
 				if (aura) {
+					if (aura.config?.enabled === false && auraConfig.enabled === false && !force) continue;
 					const hasChanged = aura.update(auraConfig, { tokenDelta, force });
 
 					if (hasChanged) {

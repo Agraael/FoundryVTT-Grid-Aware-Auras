@@ -174,7 +174,7 @@ export class Aura {
 		const positionChanged = this.updatePosition({ tokenDelta });
 
 		// If a relevant property has changed, do a redraw
-		if (shouldRedraw || force) {
+		if ((shouldRedraw || force) && config?.enabled !== false) {
 			const { width, height, hexagonalShape } = pickProperties(["width", "height", "hexagonalShape"], tokenDelta, this.#token.document);
 			this.#redraw(width, height, config.radiusCalculated, config.innerRadiusCalculated, hexagonalShape);
 		}
@@ -202,7 +202,7 @@ export class Aura {
 
 		// During drag, updatePosition fires every frame but #redraw only runs on doc changes.
 		// Re-trigger #redraw for elevationAware auras so the terrain clip follows the preview.
-		if (hasChanged && this.#config?.elevationAware && this.#geometry && typeof this.#radius === "number" && this.#radius >= 0) {
+		if (hasChanged && this.#config?.enabled !== false && this.#config?.elevationAware && this.#geometry && typeof this.#radius === "number" && this.#radius >= 0) {
 			const { width, height, hexagonalShape } = this.#token.document;
 			this.#redraw(width, height, this.#radius, this.#innerRadius, hexagonalShape);
 		}
