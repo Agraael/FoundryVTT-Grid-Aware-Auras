@@ -2,7 +2,7 @@ import * as api from "./api.mjs";
 import { addAuraConfigItemHeaderButton } from "./applications/item-aura-config.mjs";
 import { tokenConfigClose, v12TokenConfigRenderInner, v13TokenConfigRender } from "./applications/token-aura-config.mjs";
 import { setupAutomation } from "./automation/index.mjs";
-import { DOCUMENT_AURAS_FLAG, END_MOVE_INSIDE_AURA_HOOK, MODULE_NAME, SOCKET_NAME, START_MOVE_INSIDE_AURA_HOOK, TOGGLE_EFFECT_FUNC } from "./consts.mjs";
+import { DOCUMENT_AURAS_FLAG, END_MOVE_INSIDE_AURA_HOOK, ENTER_LEAVE_AURA_HOOK, MODULE_NAME, SOCKET_NAME, START_MOVE_INSIDE_AURA_HOOK, TOGGLE_EFFECT_FUNC } from "./consts.mjs";
 import { canTargetToken, initialiseAuraTargetFilters } from "./data/aura-target-filters.mjs";
 import { getPresets } from "./data/preset.mjs";
 import { AuraLayer } from "./layers/aura-layer/aura-layer.mjs";
@@ -21,6 +21,9 @@ const watchedTokenProperties = [
 	"hexagonalShape",
 	"flags.grid-aware-auras.auras"
 ];
+
+// Pre-move position stash so updateToken can walk the path and detect aura traversals.
+const prePositionByTokenId = new Map();
 
 // Track active ruler groups for Alt-pressed rulers (so we can clean them even if preview token is gone)
 const activeAltPressedRulers = new Set();
@@ -287,6 +290,14 @@ Hooks.on("createToken", (tokenDocument, _options, userId) => {
 	}
 });
 
+Hooks.on("preUpdateToken", (tokenDocument, change) => {
+	if (!("x" in change || "y" in change)) {
+		prePositionByTokenId.delete(tokenDocument.id);
+		return;
+	}
+	prePositionByTokenId.set(tokenDocument.id, { x: tokenDocument.x, y: tokenDocument.y });
+});
+
 Hooks.on("updateToken", (tokenDocument, delta, _options, userId) => {
 	if (!AuraLayer.current) return;
 
@@ -300,6 +311,10 @@ Hooks.on("updateToken", (tokenDocument, delta, _options, userId) => {
 	const startingAuras = isMovementUpdate ? AuraLayer.current._auraManager.getAurasContainingToken(token) : [];
 	for (const aura of startingAuras)
 		Hooks.callAll(START_MOVE_INSIDE_AURA_HOOK, token, aura.parent, aura.aura.config, { userId });
+
+	// Stashed pre-move position for traversal detection (deleted whether we use it or not).
+	const prePos = prePositionByTokenId.get(tokenDocument.id);
+	prePositionByTokenId.delete(tokenDocument.id);
 
 	// If the token has moved, or changed shape/size then update the auras.
 	// Do not always run this, because some modules (such as token FX) trigger an updateToken, which if it happens while
@@ -315,7 +330,63 @@ Hooks.on("updateToken", (tokenDocument, delta, _options, userId) => {
 		const startedInside = startingAuras.some(a => a.aura === aura.aura && a.parent === aura.parent);
 		Hooks.callAll(END_MOVE_INSIDE_AURA_HOOK, token, aura.parent, aura.aura.config, { startedInside, startPosition, userId });
 	}
+
+	// Traversal: auras the token crossed during this move but wasn't in at start or end. Fire ENTER + LEAVE.
+	if (isMovementUpdate && prePos) {
+		const postPos = { x: tokenDocument.x, y: tokenDocument.y };
+		const traversed = _getTraversedAuras(token, prePos, postPos, startingAuras, endingAuras);
+		for (const { parent, aura } of traversed) {
+			Hooks.callAll(ENTER_LEAVE_AURA_HOOK, token, parent, aura.config, { hasEntered: true, isPreview: false, isInit: false, isTraversal: true, userId });
+			Hooks.callAll(ENTER_LEAVE_AURA_HOOK, token, parent, aura.config, { hasEntered: false, isPreview: false, isInit: false, isTraversal: true, userId });
+		}
+	}
 });
+
+function _getTraversedAuras(token, prePos, postPos, startingAuras, endingAuras) {
+	const grid = canvas.grid;
+	if (!grid?.getDirectPath || !grid?.getCenterPoint) return [];
+	const gridSize = grid.size;
+	const w = (token.document.width ?? 1) * gridSize;
+	const h = (token.document.height ?? 1) * gridSize;
+	const preCenter = { x: prePos.x + w / 2, y: prePos.y + h / 2 };
+	const postCenter = { x: postPos.x + w / 2, y: postPos.y + h / 2 };
+	let offsets;
+	try {
+		offsets = grid.getDirectPath([preCenter, postCenter]) ?? [];
+	} catch {
+		return [];
+	}
+	if (offsets.length <= 2) return [];
+
+	const excluded = new Set();
+	const auraKey = (parent, aura) => `${parent.id}::${aura.config.id}`;
+	for (const a of startingAuras) excluded.add(auraKey(a.parent, a.aura));
+	for (const a of endingAuras) excluded.add(auraKey(a.parent, a.aura));
+
+	// All auras in the scene to test against. Aura's parent === this token's own aura is skipped.
+	const allAuras = canvas.tokens.placeables.flatMap(t => {
+		if (t.id === token.id) return [];
+		return AuraLayer.current._auraManager.getTokenAuras(t).map(aura => ({ parent: t, aura }));
+	});
+	if (allAuras.length === 0) return [];
+
+	const found = new Map();
+	const last = offsets.length - 1;
+	for (let i = 1; i < last; i++) {
+		const c = grid.getCenterPoint(offsets[i]);
+		const cellPos = { x: c.x - w / 2, y: c.y - h / 2 };
+		for (const { parent, aura } of allAuras) {
+			const k = auraKey(parent, aura);
+			if (excluded.has(k) || found.has(k)) continue;
+			if (!aura.config?.enabled) continue;
+			if (aura.config?.onlyEnabledInCombat && !game.combat) continue;
+			if (aura.isInside?.(token, { targetTokenPosition: cellPos })) {
+				found.set(k, { parent, aura });
+			}
+		}
+	}
+	return [...found.values()];
+}
 
 // When token moves or is made visible/hidden, update the aura position and visibility
 Hooks.on("refreshToken", (token, { refreshPosition, refreshVisibility }) => {
