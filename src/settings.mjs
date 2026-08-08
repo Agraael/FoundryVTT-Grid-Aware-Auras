@@ -1,6 +1,7 @@
 import { CustomAuraTargetFilterConfig } from "./applications/custom-aura-target-filter-config.mjs";
 import { PresetManagerApplication } from "./applications/preset-manager.mjs";
 import {
+	CLIENT_HIDDEN_AURAS_SETTING,
 	CUSTOM_AURA_TARGET_FILTERS_SETTING,
 	ENABLE_EFFECT_AUTOMATION_SETTING,
 	ENABLE_MACRO_AUTOMATION_SETTING,
@@ -52,6 +53,13 @@ export function registerSettings() {
 		type: Boolean,
 		config: true,
 		requiresReload: true
+	});
+
+	game.settings.register(MODULE_NAME, CLIENT_HIDDEN_AURAS_SETTING, {
+		scope: "client",
+		config: false,
+		type: Object,
+		default: {}
 	});
 
 	game.settings.registerMenu(MODULE_NAME, PRESET_SETTING, {

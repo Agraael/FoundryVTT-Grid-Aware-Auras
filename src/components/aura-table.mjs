@@ -7,6 +7,7 @@ import { ENABLE_EFFECT_AUTOMATION_SETTING, ENABLE_MACRO_AUTOMATION_SETTING, LINE
 import { calculateAuraRadius, createAura, exportAuraJson, getAura, importAuraJson } from "../data/aura.mjs";
 import { getPresetsRaw, saveAuraAsNewPreset } from "../data/preset.mjs";
 import { toCssRgbString } from "../shared/color/conversions.mjs";
+import { isAuraClientHidden, toggleAuraClientHidden } from "../utils/client-aura-visibility.mjs";
 import { styleColorAnimation } from "../shared/directives/style-color-animation.mjs";
 import { ContextMenu } from "../shared/elements/context-menu/context-menu.mjs";
 
@@ -128,17 +129,18 @@ export class AuraTable extends LitElement {
 
 		return html`
 			<tr data-aura-id=${aura.id} @contextmenu=${e => this.#openContextMenu(aura, e)}>
-				<td style="width: 24px">
+				<td style="width: 44px; white-space: nowrap;">
 					${this.disabled
 						// eslint-disable-next-line @stylistic/js/indent
-						? html`<p style="width: 18px">
-							<i class=${`fas fa-toggle-${aura.enabled ? "on" : "off"}`}></i>
-						</p>`
+						? html`<i class=${`fas fa-toggle-${aura.enabled ? "on" : "off"}`}></i>`
 						// eslint-disable-next-line @stylistic/js/indent
-						: html`<a data-tooltip="Enable/disable aura" style="width: 18px" @click=${() => this.#setAuraEnabled(aura.id, !aura.enabled)}>
+						: html`<a data-tooltip="Enable/disable aura (all clients)" @click=${() => this.#setAuraEnabled(aura.id, !aura.enabled)}>
 							<i class=${`fas fa-toggle-${aura.enabled ? "on" : "off"}`}></i>
 						</a>`
 					}
+					<a data-tooltip="Show/hide locally (this client only)" @click=${() => this.#toggleClientHidden(aura)}>
+						<i class=${`fas fa-${isAuraClientHidden(aura.id, aura) ? "eye-slash" : "eye"}`}></i>
+					</a>
 				</td>
 				<td>
 					<a @click=${() => this.#editAura(aura)}>
@@ -280,6 +282,11 @@ export class AuraTable extends LitElement {
 	#setAuraEnabled(auraId, enabled) {
 		this.value = this.value.map(a => a.id === auraId ? { ...a, enabled } : a);
 		this.#dispatchChangeEvent();
+	}
+
+	async #toggleClientHidden(aura) {
+		await toggleAuraClientHidden(aura.id, aura);
+		this.requestUpdate();
 	}
 
 	/**

@@ -232,6 +232,7 @@ export const auraDefaults = () => ({
 	_v: latestAuraConfigVersion,
 	name: "New Aura",
 	enabled: true,
+	clientDefaultHidden: false,
 	unified: false,
 	onlyEnabledInCombat: false,
 	keyPressMode: "DISABLED",

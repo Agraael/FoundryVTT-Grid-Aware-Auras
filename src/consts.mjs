@@ -14,6 +14,8 @@ export const PRESET_SETTING = "presets";
 export const SQUARE_GRID_MODE_SETTING = "squareGridMode";
 export const CUSTOM_AURA_TARGET_FILTERS_SETTING = "customAuraTargetFilters";
 export const IGNORE_LIGHTING_SETTING = "ignoreLighting";
+// Per-client (local) map of aura ids the current client has hidden. Client-scoped, not synced.
+export const CLIENT_HIDDEN_AURAS_SETTING = "clientHiddenAuras";
 
 // Hooks
 const HOOK_PREFIX = "gridAwareAuras";

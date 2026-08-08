@@ -186,6 +186,13 @@ export class AuraLayer extends CanvasLayer {
 		}
 
 		this._scheduleUnifiedAuraUpdate();
+
+		if (isInit) {
+			canvas.app.ticker.addOnce(() => {
+				if (this._isTearingDown || !this.#isInitialised) return;
+				this._updateAuraGraphics({ updatePosition: true, updateVisibility: true });
+			}, undefined, PIXI.UPDATE_PRIORITY.UTILITY);
+		}
 	}
 
 	/**
@@ -207,7 +214,9 @@ export class AuraLayer extends CanvasLayer {
 			return;
 		}
 		this.#unifiedUpdatePending = true;
-		canvas.app.ticker.addOnce(() => {
+		// Debounce ~100ms: token move fires refreshToken 60x/sec, each schedules unified.
+		// Unified does Clipper + multi renderer.render -> heavy allocs -> MajorGC stalls.
+		setTimeout(() => {
 			this._updateUnifiedAuras()
 				.catch(console.error)
 				.finally(() => {
@@ -217,7 +226,7 @@ export class AuraLayer extends CanvasLayer {
 						this._scheduleUnifiedAuraUpdate();
 					}
 				});
-		}, undefined, PIXI.UPDATE_PRIORITY.UTILITY);
+		}, 100);
 	}
 
 	async _updateUnifiedAuras() {
@@ -227,6 +236,7 @@ export class AuraLayer extends CanvasLayer {
 		const groups = new Map();
 		for (const { parent, aura } of this._auraManager.getAllAuras({ preview: false })) {
 			if (!aura.config.unified || !aura.config.enabled) continue;
+			if (!aura.isVisible) continue;
 			const name = aura.config.name;
 			if (!groups.has(name)) {
 				groups.set(name, [{ token: parent, aura }]);

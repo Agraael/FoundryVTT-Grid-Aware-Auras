@@ -290,6 +290,10 @@ Hooks.on("createToken", (tokenDocument, _options, userId) => {
 	}
 });
 
+Hooks.on("canvasReady", () => {
+	AuraLayer.current?._updateAuraGraphics({ updatePosition: true, updateVisibility: true });
+});
+
 Hooks.on("preUpdateToken", (tokenDocument, change) => {
 	if (!("x" in change || "y" in change)) {
 		prePositionByTokenId.delete(tokenDocument.id);

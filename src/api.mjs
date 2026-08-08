@@ -5,6 +5,8 @@ import { auraDefaults, getDocumentOwnAuras as getDocumentOwnAurasImpl } from "./
 import { AuraLayer } from "./layers/aura-layer/aura-layer.mjs";
 import { toggleEffect as toggleEffectImpl } from "./utils/misc-utils.mjs";
 
+export { isAuraClientHidden, setAuraClientHidden, toggleAuraClientHidden } from "./utils/client-aura-visibility.mjs";
+
 /**
  * Creates a new aura on the provided document.
  * @param {Token | TokenDocument | Item} owner The entity that will own the aura.

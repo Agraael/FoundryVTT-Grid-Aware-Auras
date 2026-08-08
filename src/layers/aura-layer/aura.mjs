@@ -3,6 +3,7 @@
 import { MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
 import { PolygonGraphic } from "../../shared/pixi/polygon-graphic.mjs";
+import { isAuraClientHidden } from "../../utils/client-aura-visibility.mjs";
 import { clipAuraAgainstTerrain } from "../../utils/elevation-aware.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
@@ -397,6 +398,14 @@ export class Aura {
 		/** @type {{ x: number; y: number }} */
 		let { x, y } = pickProperties(["x", "y"], ...positions);
 
+		if ((x === 0 || x === undefined) && (y === 0 || y === undefined)) {
+			const doc = this.#token?.document;
+			if (doc && (doc.x || doc.y)) {
+				x = doc.x;
+				y = doc.y;
+			}
+		}
+
 		// If the token has a size of < 1 on a non-gridless scen), then we need to snap the aura to the nearest grid cell
 		const { width, height } = this.#token.document;
 		if ((width < 1 || height < 1) && canvas.grid.type !== CONST.GRID_TYPES.GRIDLESS) {
@@ -439,6 +448,8 @@ export class Aura {
 		if (!this.#token.visible || this.#token.hasPreview || !this.#config.enabled) {
 			return false;
 		}
+
+		if (isAuraClientHidden(this.#config.id, this.#config)) return false;
 
 		// "Only Enabled in Combat" gate: hide when there's no active combat
 		// (active = combat exists for this scene, started or not)

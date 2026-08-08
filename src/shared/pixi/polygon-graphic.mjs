@@ -200,6 +200,8 @@ export class PolygonGraphic extends PIXI.Container {
 		this.#fillColorAnimationKeyframesPremultiplied = style?.fillColorAnimation
 			? premultiplyKeyframes(style.fillColorAnimation.keyframes)
 			: undefined;
+
+		this.#applyAnimationFrame();
 	}
 
 	clear() {
@@ -208,18 +210,21 @@ export class PolygonGraphic extends PIXI.Container {
 
 	/** Function to be called each frame to animate anything that needs animating. */
 	tick() {
+		if (!this.renderable || !this.visible || this.alpha <= 0) return;
+		this.#applyAnimationFrame();
+	}
+
+	#applyAnimationFrame() {
 		const now = Date.now();
 
-		// Line color
-		if (this.#lineGraphics && this.#style.lineColorAnimation && this.#lineColorAnimationKeyframesPremultiplied) {
+		if (this.#lineGraphics && this.#style?.lineColorAnimation && this.#lineColorAnimationKeyframesPremultiplied) {
 			const { duration, easingFunc } = this.#style.lineColorAnimation;
 			const { color, alpha } = getColorAnimationValue(this.#lineColorAnimationKeyframesPremultiplied, duration, easingFunc, now);
 			this.#lineGraphics.tint = unpremultiply(color, alpha);
 			this.#lineGraphics.alpha = alpha;
 		}
 
-		// Line dash
-		if (this.#lineGraphics && this.#style.lineType === LINE_TYPES.DASHED && (this.#style.lineDashOffsetAnimation ?? 0) !== 0) {
+		if (this.#lineGraphics && this.#style?.lineType === LINE_TYPES.DASHED && (this.#style.lineDashOffsetAnimation ?? 0) !== 0) {
 			this.#lineGraphics.clear();
 			this.#lineGraphics.lineStyle({
 				color: 0xFFFFFF,
@@ -238,8 +243,7 @@ export class PolygonGraphic extends PIXI.Container {
 				drawDashedComplexPath(this.#lineGraphics, holeGeometry, dashConfig);
 		}
 
-		// Fill color
-		if (this.#fillGraphics && this.#style.fillColorAnimation && this.#fillColorAnimationKeyframesPremultiplied) {
+		if (this.#fillGraphics && this.#style?.fillColorAnimation && this.#fillColorAnimationKeyframesPremultiplied) {
 			const { duration, easingFunc } = this.#style.fillColorAnimation;
 			const { color, alpha } = getColorAnimationValue(this.#fillColorAnimationKeyframesPremultiplied, duration, easingFunc, now);
 			const target = this.#fillTilingSprite ?? this.#fillGraphics;
@@ -247,9 +251,8 @@ export class PolygonGraphic extends PIXI.Container {
 			target.alpha = alpha;
 		}
 
-		// Fill texture offset
-		// tilePosition wrap period is tileScale * texSize (see PIXI TilingSpriteRenderer.render).
-		if (this.#fillTilingSprite && this.#style.fillTextureOffsetAnimation) {
+		// tilePosition wrap period is tileScale * texSize.
+		if (this.#fillTilingSprite && this.#style?.fillTextureOffsetAnimation) {
 			const { x: xDelta, y: yDelta } = this.#style.fillTextureOffsetAnimation;
 			const periodX = (this.#style.fillTexture?.width ?? 1) * (this.#fillTilingSprite.tileScale.x || 1);
 			const periodY = (this.#style.fillTexture?.height ?? 1) * (this.#fillTilingSprite.tileScale.y || 1);

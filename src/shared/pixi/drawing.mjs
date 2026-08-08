@@ -147,7 +147,10 @@ export function drawDashedComplexPath(graphics, commands, { dashSize = 20, gapSi
 					const dashGapAngleRemaining = dashGapRemaining / r;
 					const angleToDraw = Math.min(remainingAngle, dashGapAngleRemaining);
 					remainingAngle -= angleToDraw;
-					dashGapRemaining -= angleToDraw * r;
+					// (x/r)*r doesn't round-trip, so the residue can hover just above 0 forever and stall the loop.
+					dashGapRemaining = angleToDraw === dashGapAngleRemaining
+						? 0
+						: dashGapRemaining - (angleToDraw * r);
 
 					if (dash) {
 						// Need to move it each time because arc draws a line from the cursor to the start point which
