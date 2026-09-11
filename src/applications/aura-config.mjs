@@ -863,7 +863,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 		const macroInputRef = createRef();
 
 		const onCmMount = el => {
-			if (el) this.#mountCodeMirror(el);
+			if (el) this.#mountCodeMirror(el, editingMacro.code ?? "");
 			else this.#destroyCodeMirror();
 		};
 
@@ -878,7 +878,7 @@ export class AuraConfigApplication extends ApplicationV2 {
 				<form class="gaa-code-form"
 					@submit=${onSubmit}>
 					<label class="gaa-code-label">Code</label>
-					<textarea name="code" class="gaa-macro-code" rows="20" ?disabled=${this.#disabled} ${ref(onCmMount)}>${editingMacro.code ?? ""}</textarea>
+					<textarea name="code" class="gaa-macro-code" rows="20" ?disabled=${this.#disabled} .value=${editingMacro.code ?? ""} ${ref(onCmMount)}></textarea>
 					<p class="hint gaa-code-hint">Async function. Scope: <code>token, parent, aura, options, api</code>.</p>
 
 					<div class="form-group">
@@ -970,9 +970,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 		`;
 	};
 
-	#mountCodeMirror(textarea) {
+	#mountCodeMirror(textarea, initialValue = "") {
 		const CM = /** @type {any} */ globalThis.CodeMirror;
-		if (!CM || !textarea) return;
+		if (!textarea) return;
+
+		textarea.value = initialValue;
+		if (!CM) return;
+
 		this.#destroyCodeMirror();
 		this.#cmInstance = CM.fromTextArea(textarea, {
 			mode: "javascript",

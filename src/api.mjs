@@ -89,6 +89,20 @@ export function getAurasContainingToken(token) {
 }
 
 /**
+ * Returns an array of auras that contain the given world point, honouring the elevationAware terrain
+ * clip. When elevation is given, also checks it against elevationAware auras' vertical extent.
+ * @param {number} x
+ * @param {number} y
+ * @param {Object} [options]
+ * @param {number | null} [options.elevation]
+ */
+export function getAurasContainingPoint(x, y, { elevation = null } = {}) {
+	return [...AuraLayer.current?._auraManager.getAllAuras({ preview: false }) ?? []]
+		.filter(({ aura }) => aura.config?.enabled && aura.isWorldPointInsideClipped(x, y, elevation))
+		.map(({ parent, aura }) => ({ parent, aura: aura.config }));
+}
+
+/**
  * Returns an array of tokens that are inside the given aura.
  * @param {Token | { id: string; preview: boolean; }} parent The token that owns the aura.
  * @param {string} auraId The ID of the aura to check.

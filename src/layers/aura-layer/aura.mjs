@@ -4,7 +4,7 @@ import { MODULE_NAME, SQUARE_GRID_MODE_SETTING } from "../../consts.mjs";
 import { auraDefaults, auraVisibilityDefaults } from "../../data/aura.mjs";
 import { PolygonGraphic } from "../../shared/pixi/polygon-graphic.mjs";
 import { isAuraClientHidden } from "../../utils/client-aura-visibility.mjs";
-import { clipAuraAgainstTerrain } from "../../utils/elevation-aware.mjs";
+import { clipAuraAgainstTerrain, isPointInsideAnyBlocker } from "../../utils/elevation-aware.mjs";
 import { pickProperties } from "../../utils/misc-utils.mjs";
 import { GridlessAuraGeometry, HexagonalAuraGeometry, SquareAuraGeometry } from "./geometry/index.mjs";
 import { isKeyPressed } from "../../main.mjs";
@@ -140,6 +140,25 @@ export class Aura {
 		if (!this.#geometry._isPointInside(lx, ly)) return false;
 		// Inside the hole = not filled.
 		if (this.#innerGeometry?._isPointInside?.(lx, ly)) return false;
+		return true;
+	}
+
+	/**
+	 * Like isWorldPointInside, but applies the elevationAware terrain clip and vertical band.
+	 * @param {number} wx
+	 * @param {number} wy
+	 * @param {number | null} [elevation] World elevation to test against the aura's vertical extent.
+	 */
+	isWorldPointInsideClipped(wx, wy, elevation = null) {
+		if (!this.isWorldPointInside(wx, wy)) return false;
+		if (this.#config?.elevationAware) {
+			if (isPointInsideAnyBlocker(wx, wy, this.#blockers)) return false;
+			if (elevation !== null) {
+				const sourceElev = this.#token?.document?.elevation ?? 0;
+				const radius = this.#radius ?? 0;
+				if (elevation < sourceElev || elevation > sourceElev + radius) return false;
+			}
+		}
 		return true;
 	}
 
