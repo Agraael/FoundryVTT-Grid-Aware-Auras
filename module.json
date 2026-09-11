@@ -2,7 +2,7 @@
 	"id": "grid-aware-auras",
 	"title": "Grid-Aware Auras (LaSossis's Fork)",
 	"description": "Module for attaching grid-aware auras to tokens.",
-	"version": "0.5.8.7",
+	"version": "0.5.8.8",
 	"compatibility": {
 		"minimum": "12",
 		"verified": "13"
