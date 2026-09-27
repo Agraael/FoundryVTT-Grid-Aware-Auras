@@ -13,6 +13,7 @@ export const latestAuraConfigVersion = 3;
  * @property {boolean} enabled
  * @property {boolean} unified
  * @property {boolean} onlyEnabledInCombat
+ * @property {boolean} laLineOfSight When true, lancer-automations draws this aura as a traversal band on its line-of-sight ruler. Off by default.
  * @property {string} keyPressMode Mode for key press visibility: "DISABLED", "ONLY_WHEN_PRESSED", "ALSO_WHEN_PRESSED"
  * @property {string} keyToPress
  * @property {number | string} radius A numeric value or an expression representing the outer radius of the aura.
@@ -269,7 +270,8 @@ export const auraDefaults = () => ({
 		onlyWhenTargeted: false
 	},
 	elevationAware: false,
-	movementPenalty: 0
+	movementPenalty: 0,
+	laLineOfSight: false
 });
 
 /** @type {() => ColorAnimation} */

@@ -504,6 +504,13 @@ export class AuraConfigApplication extends ApplicationV2 {
 				</div>
 			</div>
 
+			<div class="form-group slim">
+				<label title="Draw this aura as a traversal band on Lancer Automations' line-of-sight ruler.">
+					<input type="checkbox" name="laLineOfSight" .checked=${this.#aura.laLineOfSight ?? false} ?disabled=${this.#disabled || !game.modules.get("lancer-automations")?.active} style="margin-right: 0.25rem;">
+					Interacts with LA line of sight
+				</label>
+			</div>
+
 			<div class="form-group">
 				<label>${l("GRIDAWAREAURAS.KeyPressMode")}</label>
 				<div class="form-fields">
