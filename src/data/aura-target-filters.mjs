@@ -85,21 +85,15 @@ export function initialiseAuraTargetFilters() {
 	compileCustomFilters();
 }
 
-/** Returns advanced-team target filters from token-factions, if installed and active. */
+/** Returns advanced-team target filters from token-factions, if installed and its advanced teams are on. */
 function _advancedTeamFilters() {
-	if (!game.modules.get("token-factions")?.active) return [];
-	let useAdvanced = false;
-	try { useAdvanced = game.settings.get("token-factions", "color-from") === "advanced-factions"; }
-	catch { return []; }
-	if (!useAdvanced) return [];
-	let teams = [];
-	try { teams = game.settings.get("token-factions", "team-setup") ?? []; }
-	catch { return []; }
-	return teams.filter(t => t?.id).map(t => ({
-		id: `TEAM_${t.id}`,
-		name: t.name ?? t.id,
+	const tfApi = game.modules.get("token-factions")?.api;
+	const teams = tfApi?.getTeams?.() ?? [];
+	return teams.filter(team => team?.id).map(team => ({
+		id: `TEAM_${team.id}`,
+		name: team.name ?? team.id,
 		group: "Advanced Team",
-		f: (target) => target.actor?.getFlag("token-factions", "team") === t.id
+		f: (target) => tfApi.getTeam(target) === team.id
 	}));
 }
 
@@ -125,6 +119,7 @@ export function compileCustomFilters() {
 /**
  * Executes the filter with the given ID on the token.
  * If the filter is not specified, not found or throws an error, then returns `true` for all non-secret tokens.
+ * A team filter that is not found (teams off or team deleted) matches no token.
  * @param {Token} targetToken The token that has entered/left an aura.
  * @param {Token} sourceToken The token that owns the aura.
  * @param {import("./aura.mjs").AuraConfig} aura The aura configuration.
@@ -142,6 +137,8 @@ export function canTargetToken(targetToken, sourceToken, aura, filterId) {
 		} catch (err) {
 			warn(`Error thrown in aura target filter ${filter.name}`, err);
 		}
+	} else if (filterId?.startsWith("TEAM_")) {
+		return false;
 	}
 
 	return targetToken.disposition !== CONST.TOKEN_DISPOSITIONS.SECRET;

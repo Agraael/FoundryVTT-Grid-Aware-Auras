@@ -314,10 +314,9 @@ export class AuraLayer extends CanvasLayer {
 			} else {
 				const nearbyTokens = new Set();
 				for (const aura of sourceAuras) {
-					// Use the graphics bounds to query the quadtree
-					const bounds = aura.graphics.getBounds();
-					const objects = canvas.tokens.quadtree.getObjects(bounds);
-					for (const t of objects) nearbyTokens.add(t);
+					const bounds = aura.getSceneBounds({ sourceTokenPosition: sourceTokenDelta, useActualSourcePosition: useActualPosition });
+					if (bounds) for (const t of canvas.tokens.quadtree.getObjects(bounds)) nearbyTokens.add(t);
+					for (const t of this._auraManager.getTokensInsideAura(sourceToken, aura.config.id)) nearbyTokens.add(t);
 				}
 				tokensToTest = [...nearbyTokens];
 			}

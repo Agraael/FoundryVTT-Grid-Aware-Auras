@@ -271,6 +271,13 @@ export class Aura {
 		return true;
 	}
 
+	getSceneBounds({ sourceTokenPosition, useActualSourcePosition = false } = {}) {
+		if (!this.#geometry) return null;
+		const { x, y } = this.#getOffset(sourceTokenPosition, useActualSourcePosition ? this.#token : this.#token.document);
+		const bounds = this.#geometry.bounds;
+		return new PIXI.Rectangle(x + bounds.x, y + bounds.y, bounds.width, bounds.height);
+	}
+
 	destroy(...args) {
 		canvas.app.ticker.remove(this.#boundTick);
 		this.#graphics.destroy(...args);
