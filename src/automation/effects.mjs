@@ -80,6 +80,30 @@ export function onEnterLeaveAura(token, parent, aura, { hasEntered, isInit, isPr
 	}
 }
 
+export function captureTargetFilterState(token) {
+	const state = new Map();
+	for (const { parent, aura } of AuraLayer.current._auraManager.getAurasContainingToken(token, { preview: false })) {
+		for (const [index, effect] of (aura.config.effects ?? []).entries()) {
+			if (effect.effectId?.length && ONGOING_EFFECT_MODES.includes(effect.mode))
+				state.set(`${parent.id}.${aura.config.id}.${index}`, canTargetToken(token, parent, aura.config, effect.targetTokens));
+		}
+	}
+	return state;
+}
+
+export function onTargetFilterStateChange(token, before, userId) {
+	for (const { parent, aura } of AuraLayer.current._auraManager.getAurasContainingToken(token, { preview: false })) {
+		for (const [index, effect] of (aura.config.effects ?? []).entries()) {
+			const key = `${parent.id}.${aura.config.id}.${index}`;
+			if (!before.has(key))
+				continue;
+			const targeted = canTargetToken(token, parent, aura.config, effect.targetTokens);
+			if (targeted !== before.get(key))
+				onEnterLeaveAura(token, parent, { ...aura.config, effects: [{ ...effect, targetTokens: "ALL" }] }, { hasEntered: targeted, isInit: false, isPreview: false, userId });
+		}
+	}
+}
+
 /**
  * @param {Token} token
  * @param {string} userId

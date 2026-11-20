@@ -1,6 +1,7 @@
 import * as api from "./api.mjs";
 import { addAuraConfigItemHeaderButton } from "./applications/item-aura-config.mjs";
 import { tokenConfigClose, v12TokenConfigRenderInner, v13TokenConfigRender } from "./applications/token-aura-config.mjs";
+import { captureTargetFilterState, onTargetFilterStateChange } from "./automation/effects.mjs";
 import { setupAutomation } from "./automation/index.mjs";
 import { DOCUMENT_AURAS_FLAG, END_MOVE_INSIDE_AURA_HOOK, ENTER_LEAVE_AURA_HOOK, MODULE_NAME, SOCKET_NAME, START_MOVE_INSIDE_AURA_HOOK, TOGGLE_EFFECT_FUNC } from "./consts.mjs";
 import { canTargetToken, initialiseAuraTargetFilters } from "./data/aura-target-filters.mjs";
@@ -18,12 +19,14 @@ const watchedTokenProperties = [
 	"y",
 	"width",
 	"height",
+	"elevation",
 	"hexagonalShape",
 	"flags.grid-aware-auras.auras"
 ];
 
 // Pre-move position stash so updateToken can walk the path and detect aura traversals.
 const prePositionByTokenId = new Map();
+const preFilterStateByTokenId = new Map();
 
 // Track active ruler groups for Alt-pressed rulers (so we can clean them even if preview token is gone)
 const activeAltPressedRulers = new Set();
@@ -295,6 +298,12 @@ Hooks.on("canvasReady", () => {
 });
 
 Hooks.on("preUpdateToken", (tokenDocument, change) => {
+	const token = AuraLayer.current ? game.canvas.tokens.get(tokenDocument.id) : null;
+	if ("elevation" in change && token)
+		preFilterStateByTokenId.set(tokenDocument.id, captureTargetFilterState(token));
+	else
+		preFilterStateByTokenId.delete(tokenDocument.id);
+
 	if (!("x" in change || "y" in change)) {
 		prePositionByTokenId.delete(tokenDocument.id);
 		return;
@@ -326,6 +335,11 @@ Hooks.on("updateToken", (tokenDocument, delta, _options, userId) => {
 	if (Object.keys(foundry.utils.flattenObject(delta)).some(k => watchedTokenProperties.includes(k))) {
 		AuraLayer.current._updateAuras({ token, tokenDelta: delta, userId });
 	}
+
+	const preFilterState = preFilterStateByTokenId.get(tokenDocument.id);
+	preFilterStateByTokenId.delete(tokenDocument.id);
+	if (preFilterState)
+		onTargetFilterStateChange(token, preFilterState, userId);
 
 	// If the update was a move update, then call the hooks for any auras the token was in at the end of the move (i.e.
 	// after doing _updateAuras)
